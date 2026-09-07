@@ -1,0 +1,6 @@
+{
+  "name": "Сервис заявок",
+  "description": "Учебный web-проект: Сервис заявок для небольшой команды",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,45 @@
+@import "tailwindcss";
+
+:root {
+  --city-background: url("/src/assets/images/abudhabi_skyline_1788428772055.jpg");
+  --color-accent: #4D83FF;
+  --color-sidebar: #172033;
+  --color-bg: #F6F8FB;
+  --color-text-main: #14213D;
+  --color-text-muted: #64748B;
+  --color-success: #159570;
+  --color-progress: #E48A19;
+  --color-info: #8457D8;
+  --color-overdue: #D84A5A;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  color: #14213D;
+  background-color: #F6F8FB;
+}
+
+.city-bg-container {
+  background-image: var(--city-background);
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
