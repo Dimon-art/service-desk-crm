@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1050" viewBox="0 0 1800 1050">
+  <rect width="1800" height="1050" fill="#f8faf9"/>
+  <style>
+    .title{font:700 34px Arial,sans-serif;fill:#0b4b3c}.sub{font:400 18px Arial,sans-serif;fill:#64748b}.role{font:700 17px Arial,sans-serif;fill:#0f172a}.stage{font:700 18px Arial,sans-serif;fill:#fff}.body{font:400 14px Arial,sans-serif;fill:#334155}.small{font:400 13px Arial,sans-serif;fill:#475569}.green{fill:#14966d}.blue{fill:#287bd6}.yellow{fill:#f5b82e}.dark{fill:#07543f}.gray{fill:#64748b}.panel{fill:#fff;stroke:#dbe5df;stroke-width:1.5}.line{stroke:#159570;stroke-width:5;fill:none}.back{stroke:#e34b4b;stroke-width:5;fill:none}.box{rx:14;ry:14}.footer{font:700 17px Arial,sans-serif;fill:#fff}
+  </style>
+  <text x="45" y="55" class="title">Жизненный цикл заявки в Service Desk CRM</text>
+  <text x="45" y="88" class="sub">От создания до закрытия. Прозрачно, с ответственными, комментариями и историей событий.</text>
+  <rect x="1280" y="25" width="475" height="75" rx="16" fill="#e4f4eb"/>
+  <circle cx="1318" cy="62" r="22" fill="#159570"/><text x="1307" y="70" font-size="25" fill="#fff">✓</text>
+  <text x="1350" y="55" class="small" font-weight="700">Заявка завершена только после</text>
+  <text x="1350" y="76" class="small">подтверждения заявителем и закрытия менеджером.</text>
+
+  <!-- columns -->
+  <g transform="translate(30,130)">
+    <rect width="185" height="650" class="panel" rx="16"/>
+    <text x="92" y="32" text-anchor="middle" class="role">Заявитель</text>
+    <text x="92" y="56" text-anchor="middle" class="small">создаёт заявку</text>
+    <rect x="15" y="82" width="155" height="48" class="gray box"/><text x="92" y="112" text-anchor="middle" class="stage">1. СОЗДАНА</text>
+    <text x="25" y="165" class="body">• Заполняет форму</text><text x="25" y="188" class="body">• Тема и описание</text><text x="25" y="211" class="body">• Отправляет</text>
+  </g>
+  <g transform="translate(230,130)">
+    <rect width="185" height="650" class="panel" rx="16"/>
+    <text x="92" y="32" text-anchor="middle" class="role">Менеджер</text>
+    <text x="92" y="56" text-anchor="middle" class="small">принимает</text>
+    <rect x="15" y="82" width="155" height="48" class="green box"/><text x="92" y="112" text-anchor="middle" class="stage">2. НОВАЯ</text>
+    <text x="25" y="165" class="body">• Видит заявку</text><text x="25" y="188" class="body">• Проверяет данные</text><text x="25" y="211" class="body">• Назначает</text>
+  </g>
+  <g transform="translate(430,130)">
+    <rect width="185" height="650" class="panel" rx="16"/>
+    <text x="92" y="32" text-anchor="middle" class="role">Менеджер</text>
+    <text x="92" y="56" text-anchor="middle" class="small">назначает</text>
+    <rect x="15" y="82" width="155" height="48" class="green box"/><text x="92" y="112" text-anchor="middle" class="stage">3. НАЗНАЧЕНА</text>
+    <text x="25" y="165" class="body">• Конкретный исполнитель</text><text x="25" y="188" class="body">• Кто и когда назначил</text><text x="25" y="211" class="body">• Уведомление</text>
+  </g>
+  <g transform="translate(630,130)">
+    <rect width="185" height="650" class="panel" rx="16"/>
+    <text x="92" y="32" text-anchor="middle" class="role">Исполнитель</text>
+    <text x="92" y="56" text-anchor="middle" class="small">принимает</text>
+    <rect x="15" y="82" width="155" height="48" class="blue box"/><text x="92" y="105" text-anchor="middle" class="stage">4. ПРИНЯТА</text><text x="92" y="123" text-anchor="middle" class="stage">В РАБОТУ</text>
+    <text x="25" y="165" class="body">• Подтверждает получение</text><text x="25" y="188" class="body">• Дата и время</text><text x="25" y="211" class="body">• Переход в работу</text>
+  </g>
+  <g transform="translate(830,130)">
+    <rect width="185" height="650" class="panel" rx="16"/>
+    <text x="92" y="32" text-anchor="middle" class="role">Исполнитель</text>
+    <text x="92" y="56" text-anchor="middle" class="small">выполняет</text>
+    <rect x="15" y="82" width="155" height="48" class="blue box"/><text x="92" y="112" text-anchor="middle" class="stage">5. В РАБОТЕ</text>
+    <text x="25" y="165" class="body">• Выполняет задачу</text><text x="25" y="188" class="body">• Комментарии</text><text x="25" y="211" class="body">• Может запросить данные</text>
+  </g>
+  <g transform="translate(1030,130)">
+    <rect width="185" height="650" class="panel" rx="16"/>
+    <text x="92" y="32" text-anchor="middle" class="role">Исполнитель</text>
+    <text x="92" y="56" text-anchor="middle" class="small">фиксирует результат</text>
+    <rect x="15" y="82" width="155" height="48" class="green box"/><text x="92" y="112" text-anchor="middle" class="stage">6. РЕЗУЛЬТАТ</text>
+    <text x="25" y="165" class="body">• ✓ Выполнено</text><text x="25" y="188" class="body">• ✕ Не выполнено</text><text x="25" y="211" class="body">• Комментарий и дата</text>
+  </g>
+  <g transform="translate(1230,130)">
+    <rect width="185" height="650" class="panel" rx="16"/>
+    <text x="92" y="32" text-anchor="middle" class="role">Заявитель</text>
+    <text x="92" y="56" text-anchor="middle" class="small">проверяет результат</text>
+    <rect x="15" y="82" width="155" height="48" class="yellow box"/><text x="92" y="105" text-anchor="middle" class="stage">7. ПОДТВЕРЖДЕНИЕ</text><text x="92" y="123" text-anchor="middle" class="stage">ЗАЯВИТЕЛЯ</text>
+    <text x="25" y="165" class="body">• Видит результат</text><text x="25" y="188" class="body">• ✓ Да, выполнено</text><text x="25" y="211" class="body">• ✕ Нет, не решено</text>
+  </g>
+  <g transform="translate(1430,130)">
+    <rect width="155" height="650" class="panel" rx="16"/>
+    <text x="77" y="32" text-anchor="middle" class="role">Менеджер</text>
+    <text x="77" y="56" text-anchor="middle" class="small">фиксирует</text>
+    <rect x="10" y="82" width="135" height="48" class="green box"/><text x="77" y="105" text-anchor="middle" class="stage">8. ПОДТВЕРЖДЕНО</text>
+    <text x="20" y="165" class="body">• Заявитель подтвердил</text><text x="20" y="188" class="body">• Менеджер проверяет</text><text x="20" y="211" class="body">• Доступно закрытие</text>
+  </g>
+  <g transform="translate(1600,130)">
+    <rect width="170" height="650" class="panel" rx="16"/>
+    <text x="85" y="32" text-anchor="middle" class="role">Менеджер</text>
+    <text x="85" y="56" text-anchor="middle" class="small">закрывает</text>
+    <rect x="10" y="82" width="150" height="48" class="dark box"/><text x="85" y="112" text-anchor="middle" class="stage">9. ЗАКРЫТА</text>
+    <text x="20" y="165" class="body">• Фиксирует закрытие</text><text x="20" y="188" class="body">• Дата и время</text><text x="20" y="211" class="body">• Архив</text><text x="20" y="234" class="body">• Уведомление</text>
+  </g>
+
+  <!-- arrows -->
+  <g class="line">
+    <path d="M215 235 H230"/><path d="M415 235 H430"/><path d="M615 235 H630"/><path d="M815 235 H830"/><path d="M1015 235 H1030"/><path d="M1215 235 H1230"/><path d="M1415 235 H1430"/><path d="M1585 235 H1600"/>
+  </g>
+  <text x="1315" y="345" text-anchor="middle" font-family="Arial" font-size="15" fill="#159570" font-weight="700">ДА → дальше</text>
+  <path d="M1320 370 C1220 520 1110 540 1010 500" class="back"/>
+  <text x="1165" y="555" text-anchor="middle" font-family="Arial" font-size="15" fill="#e34b4b" font-weight="700">НЕТ → возврат в работу</text>
+
+  <rect x="35" y="815" width="1730" height="80" rx="15" fill="#eef3f1"/>
+  <text x="900" y="847" text-anchor="middle" class="role">История событий фиксируется на каждом ключевом переходе</text>
+  <text x="900" y="873" text-anchor="middle" class="small">кто → что сделал → когда → какой результат → кто подтвердил</text>
+
+  <rect x="35" y="920" width="1730" height="85" rx="15" fill="#07543f"/>
+  <text x="900" y="955" text-anchor="middle" class="footer">Прозрачный процесс  |  Чёткая ответственность  |  Полная история  |  Уведомления на ключевых этапах</text>
+  <text x="900" y="982" text-anchor="middle" font-family="Arial" font-size="14" fill="#d9f3e9">Главное правило: закрытие доступно только после подтверждения заявителя</text>
+</svg>
