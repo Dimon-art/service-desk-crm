@@ -30,17 +30,38 @@ export interface Request {
   requester_email: string;
   title: string;
   description: string;
-  status: 'new' | 'in_progress' | 'need_info' | 'closed';
+  status:
+    | 'new'
+    | 'assigned'
+    | 'in_progress'
+    | 'need_info'
+    | 'completed'
+    | 'awaiting_confirmation'
+    | 'confirmed'
+    | 'closed';
   manager_comment: string;
+  assignee: string;
+  assigned_at: string | null;
+  accepted_at: string | null;
+  completed_at: string | null;
+  confirmed_at: string | null;
   created_at: string;
   updated_at: string;
-  access_token?: string; // Unique secret token for беспарольный доступ
+  access_token?: string; // Уникальный секретный токен для доступа без пароля
 }
 
 export interface RequestStatusLog {
   id: number;
   request_id: number;
-  status: 'new' | 'in_progress' | 'need_info' | 'closed';
+  status:
+    | 'new'
+    | 'assigned'
+    | 'in_progress'
+    | 'need_info'
+    | 'completed'
+    | 'awaiting_confirmation'
+    | 'confirmed'
+    | 'closed';
   note?: string;
   created_at: string;
 }
@@ -66,6 +87,7 @@ export interface Notification {
 
 export interface DBStructure {
   requests: Request[];
+  archived_requests: Request[];
   request_status_log: RequestStatusLog[];
   escalations: Escalation[];
   notifications?: Notification[];
@@ -78,7 +100,7 @@ function generateToken(): string {
 function loadDatabase(): DBStructure {
   try {
     if (!fs.existsSync(dbPath)) {
-      const emptyDb: DBStructure = { requests: [], request_status_log: [], escalations: [], notifications: [] };
+      const emptyDb: DBStructure = { requests: [], archived_requests: [], request_status_log: [], escalations: [], notifications: [] };
       fs.writeFileSync(dbPath, JSON.stringify(emptyDb, null, 2));
       return emptyDb;
     }
@@ -89,6 +111,11 @@ function loadDatabase(): DBStructure {
     if (Array.isArray(parsed)) {
       const requests: Request[] = parsed.map(r => ({
         ...r,
+        assignee: r.assignee || '',
+        assigned_at: r.assigned_at || null,
+        accepted_at: r.accepted_at || null,
+        completed_at: r.completed_at || null,
+        confirmed_at: r.confirmed_at || null,
         access_token: r.access_token || generateToken()
       }));
       const request_status_log: RequestStatusLog[] = [];
@@ -119,6 +146,7 @@ function loadDatabase(): DBStructure {
       
       const migratedDb: DBStructure = {
         requests,
+        archived_requests: [],
         request_status_log,
         escalations: [],
         notifications: []
@@ -136,10 +164,31 @@ function loadDatabase(): DBStructure {
     const request_status_log = Array.isArray(dbObj.request_status_log) ? dbObj.request_status_log : [];
     const escalations = Array.isArray(dbObj.escalations) ? dbObj.escalations : [];
     const notifications = Array.isArray(dbObj.notifications) ? dbObj.notifications : [];
+    const archived_requests = Array.isArray(dbObj.archived_requests) ? dbObj.archived_requests : [];
     
     // Ensure all requests have access tokens
     let updated = false;
     for (const r of requests) {
+      if (r.assignee === undefined) {
+        r.assignee = '';
+        updated = true;
+      }
+      if (r.assigned_at === undefined) {
+        r.assigned_at = null;
+        updated = true;
+      }
+      if (r.accepted_at === undefined) {
+        r.accepted_at = null;
+        updated = true;
+      }
+      if (r.completed_at === undefined) {
+        r.completed_at = null;
+        updated = true;
+      }
+      if (r.confirmed_at === undefined) {
+        r.confirmed_at = null;
+        updated = true;
+      }
       if (!r.access_token) {
         r.access_token = generateToken();
         updated = true;
@@ -148,6 +197,7 @@ function loadDatabase(): DBStructure {
     
     const db: DBStructure = {
       requests,
+      archived_requests,
       request_status_log,
       escalations,
       notifications
@@ -160,7 +210,7 @@ function loadDatabase(): DBStructure {
     return db;
   } catch (err) {
     console.error('Error reading/migrating database file:', err);
-    return { requests: [], request_status_log: [], escalations: [], notifications: [] };
+    return { requests: [], archived_requests: [], request_status_log: [], escalations: [], notifications: [] };
   }
 }
 
@@ -185,19 +235,13 @@ function queueSaveDatabase(db: DBStructure): Promise<void> {
 }
 
 function saveDatabase(db: DBStructure) {
-  const tempPath = `${dbPath}.tmp`;
   try {
-    // Atomic Write: Write to temporary file first, then rename
-    fs.writeFileSync(tempPath, JSON.stringify(db, null, 2), 'utf-8');
-    fs.renameSync(tempPath, dbPath);
+    // Direct write is used because data.sqlite is a Docker bind mount.
+    // Atomic rename causes EBUSY on Windows/Docker Desktop.
+    fs.writeFileSync(dbPath, JSON.stringify(db, null, 2), 'utf-8');
   } catch (err) {
-    console.error('Error writing database file atomically:', err);
-    // Fallback direct write
-    try {
-      fs.writeFileSync(dbPath, JSON.stringify(db, null, 2), 'utf-8');
-    } catch (fallbackErr) {
-      console.error('Critical: Fallback direct write failed:', fallbackErr);
-    }
+    console.error('Critical: database write failed:', err);
+    throw err;
   }
 }
 
@@ -291,12 +335,14 @@ app.get('/api/requests/:id', async (req, res) => {
     const accessToken = req.query.accessToken as string | undefined;
     const db = loadDatabase();
     const request = db.requests.find(r => r.id === id);
-    if (!request) {
+    const archivedRequest = db.archived_requests.find(r => r.id === id);
+    const foundRequest = request || archivedRequest;
+    if (!foundRequest) {
       return res.status(404).json({ error: 'Заявка не найдена' });
     }
     
     // Security check: if not a manager and doesn't have the correct accessToken for this request, mask the email
-    if (!isManager(req) && request.access_token !== accessToken) {
+    if (!isManager(req) && foundRequest.access_token !== accessToken) {
       const email = request.requester_email || '';
       const parts = email.split('@');
       let maskedEmail = email;
@@ -308,12 +354,12 @@ app.get('/api/requests/:id', async (req, res) => {
         maskedEmail = `${maskedLocal}@${domain}`;
       }
       return res.json({
-        ...request,
+        ...foundRequest,
         requester_email: maskedEmail
       });
     }
     
-    res.json(request);
+    res.json(foundRequest);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
@@ -356,7 +402,7 @@ app.post('/api/requests', async (req, res) => {
       return res.status(400).json({ error: 'Пожалуйста, введите имя сотрудника.' });
     }
     if (!requester_email || !requester_email.trim() || !requester_email.includes('@')) {
-      return res.status(400).json({ error: 'Пожалуйста, введите корректный адрес электронной почты.' });
+      return res.status(400).json({ error: 'Пожалуйста, введите имя сотрудника.' });
     }
     if (!title || !title.trim()) {
       return res.status(400).json({ error: 'Пожалуйста, заполните тему заявки.' });
@@ -398,6 +444,11 @@ app.post('/api/requests', async (req, res) => {
       description: cleanDescription,
       status: 'new',
       manager_comment: '',
+      assignee: '',
+      assigned_at: null,
+      accepted_at: null,
+      completed_at: null,
+      confirmed_at: null,
       created_at: now,
       updated_at: now,
       access_token: accessToken
@@ -437,9 +488,18 @@ app.put('/api/requests/:id', async (req, res) => {
     }
 
     const id = parseInt(req.params.id, 10);
-    const { status, manager_comment } = req.body;
+    const { status, manager_comment, assignee } = req.body;
 
-    const validStatuses = ['new', 'in_progress', 'need_info', 'closed'];
+    const validStatuses = [
+      'new',
+      'assigned',
+      'in_progress',
+      'need_info',
+      'completed',
+      'awaiting_confirmation',
+      'confirmed',
+      'closed'
+    ];
     if (status && !validStatuses.includes(status)) {
       return res.status(400).json({ error: 'Недопустимый статус' });
     }
@@ -447,6 +507,10 @@ app.put('/api/requests/:id', async (req, res) => {
     // DoS limit check on manager_comment
     if (manager_comment && manager_comment.length > 5000) {
       return res.status(400).json({ error: 'Комментарий менеджера не должен превышать 5000 символов.' });
+    }
+
+    if (assignee !== undefined && (typeof assignee !== 'string' || assignee.trim().length > 100)) {
+      return res.status(400).json({ error: 'Исполнитель должен быть строкой длиной не более 100 символов.' });
     }
 
     const db = loadDatabase();
@@ -462,28 +526,68 @@ app.put('/api/requests/:id', async (req, res) => {
     const currentStatus = existing.status;
     if (status && status !== currentStatus) {
       const VALID_TRANSITIONS: Record<string, string[]> = {
-        new: ['in_progress', 'closed'],
-        in_progress: ['need_info', 'closed'],
-        need_info: ['in_progress', 'closed', 'new'],
-        closed: ['in_progress'], // Only allow reopening back to work for fixes
+        new: ['assigned'],
+        assigned: ['in_progress'],
+        in_progress: ['need_info', 'completed'],
+        need_info: ['in_progress'],
+        completed: ['awaiting_confirmation'],
+        awaiting_confirmation: ['confirmed', 'in_progress'],
+        confirmed: ['closed'],
+        closed: [],
       };
       const allowed = VALID_TRANSITIONS[currentStatus] || [];
       if (!allowed.includes(status)) {
         return res.status(400).json({ 
-          error: `Недопустимый переход статуса из "${currentStatus}" в "${status}". Допустимые варианты: ${allowed.join(', ')}` 
+          error: `Недопустимый переход статуса из "${currentStatus}" в "${status}". Допустимые варианты: ${allowed.join(", ")}` 
         });
       }
     }
     
     const statusChanged = status && status !== existing.status;
-    const updatedStatus = (status || existing.status) as 'new' | 'in_progress' | 'need_info' | 'closed';
+    const updatedStatus = (status || existing.status) as
+      | 'new'
+      | 'assigned'
+      | 'in_progress'
+      | 'need_info'
+      | 'completed'
+      | 'awaiting_confirmation'
+      | 'confirmed'
+      | 'closed';
     
     // Escape HTML of the manager comment to prevent XSS
     const cleanComment = manager_comment !== undefined ? escapeHtml(manager_comment.trim()) : existing.manager_comment;
+    const cleanAssignee = assignee !== undefined ? escapeHtml(assignee.trim()) : existing.assignee;
+
+    const lifecycleUpdate: Partial<Request> = {};
+
+    if (statusChanged && updatedStatus === 'assigned') {
+      if (!cleanAssignee) {
+        return res.status(400).json({ error: 'Для статуса «Назначена» необходимо указать исполнителя.' });
+      }
+      lifecycleUpdate.assignee = cleanAssignee;
+      lifecycleUpdate.assigned_at = now;
+    }
+
+    if (assignee !== undefined && !statusChanged) {
+      lifecycleUpdate.assignee = cleanAssignee;
+    }
+
+    if (statusChanged && updatedStatus === 'in_progress' && currentStatus === 'assigned') {
+      lifecycleUpdate.accepted_at = now;
+    }
+
+    if (statusChanged && updatedStatus === 'completed') {
+      lifecycleUpdate.completed_at = now;
+    }
+
+    if (statusChanged && updatedStatus === 'confirmed') {
+      lifecycleUpdate.confirmed_at = now;
+    }
 
     // Update request
     db.requests[existingIndex] = {
       ...existing,
+      ...lifecycleUpdate,
       status: updatedStatus,
       manager_comment: cleanComment,
       updated_at: now
@@ -507,8 +611,19 @@ app.put('/api/requests/:id', async (req, res) => {
       simulateEmailNotification(db, id, existing.requester_email, emailSubject, emailBody);
     }
 
+    let responseRequest = db.requests[existingIndex];
+
+    if (statusChanged && updatedStatus === 'closed') {
+      const closedRequest = { ...db.requests[existingIndex] };
+      if (!db.archived_requests.some(r => r.id === id)) {
+        db.archived_requests.push(closedRequest);
+      }
+      db.requests.splice(existingIndex, 1);
+      responseRequest = closedRequest;
+    }
+
     await queueSaveDatabase(db);
-    res.json(db.requests[existingIndex]);
+    res.json(responseRequest);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
@@ -521,10 +636,6 @@ app.get('/api/requests/:id/status-history', async (req, res) => {
     const db = loadDatabase();
     
     // Check if request exists first
-    const requestExists = db.requests.some(r => r.id === id);
-    if (!requestExists) {
-      return res.status(404).json({ error: 'Заявка не найдена' });
-    }
 
     const logs = db.request_status_log.filter(log => log.request_id === id);
     // Sort from newest to oldest
@@ -542,10 +653,6 @@ app.get('/api/requests/:id/notifications', async (req, res) => {
     const id = parseInt(req.params.id, 10);
     const db = loadDatabase();
     
-    const requestExists = db.requests.some(r => r.id === id);
-    if (!requestExists) {
-      return res.status(404).json({ error: 'Заявка не найдена' });
-    }
 
     const notifications = (db.notifications || []).filter(n => n.request_id === id);
     const sortedNotifications = [...notifications].sort((a, b) => b.id - a.id);
@@ -586,6 +693,7 @@ app.post('/api/backup/import', async (req, res) => {
     const requests = Array.isArray(incomingDb.requests) ? incomingDb.requests : null;
     const request_status_log = Array.isArray(incomingDb.request_status_log) ? incomingDb.request_status_log : null;
     const escalations = Array.isArray(incomingDb.escalations) ? incomingDb.escalations : null;
+    const archived_requests = Array.isArray(incomingDb.archived_requests) ? incomingDb.archived_requests : [];
     
     if (requests === null || request_status_log === null || escalations === null) {
       return res.status(400).json({ error: 'Отсутствуют обязательные таблицы в резервной копии' });
@@ -593,6 +701,7 @@ app.post('/api/backup/import', async (req, res) => {
     
     const validatedDb: DBStructure = {
       requests,
+      archived_requests,
       request_status_log,
       escalations,
       notifications: Array.isArray(incomingDb.notifications) ? incomingDb.notifications : []
@@ -627,3 +736,5 @@ async function startServer() {
 }
 
 startServer();
+
+
