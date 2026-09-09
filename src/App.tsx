@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { 
   Home, 
   PlusCircle, 
@@ -33,7 +33,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { SupportRequest, CreateRequestInput, RequestStatus } from './types';
-import HomeView from './components/HomeView';
+import HomeView from './components/HomeView.redesign';
 import CreateRequestForm from './components/CreateRequestForm';
 import RequestList from './components/RequestList';
 import RequestDetails from './components/RequestDetails';
@@ -166,11 +166,11 @@ export default function App() {
     <div className="min-h-screen bg-[#F6F8FB] flex text-[#14213D] antialiased font-sans select-none overflow-x-hidden">
       
       {/* 1. Слева: тёмный боковой сайдбар шириной 240 px */}
-      <aside className="w-60 bg-[#172033] text-slate-300 flex-col justify-between shrink-0 hidden md:flex border-r border-slate-800 relative z-20">
+      <aside className="w-[260px] bg-[#063D31] text-slate-300 flex-col justify-between shrink-0 hidden md:flex border-r border-slate-800 relative z-20">
         <div className="flex flex-col">
           {/* Логотип */}
           <div className="p-5 border-b border-slate-800 flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-[#4D83FF] flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
+            <div className="w-9 h-9 rounded-xl bg-[#049460] flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
               <Inbox className="w-5 h-5" />
             </div>
             <div>
@@ -194,8 +194,8 @@ export default function App() {
                   onClick={() => { setView('home'); setSelectedRequestId(null); }}
                   className={`w-full flex items-center gap-3 px-3.5 py-2.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
                     view === 'home'
-                      ? 'bg-[#4D83FF] text-white shadow-md shadow-blue-500/10 font-bold'
-                      : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                      ? 'bg-[#0F6C53] text-white shadow-md shadow-emerald-900/10 font-bold'
+                      : 'text-slate-400 hover:text-white hover:bg-white/10'
                   }`}
                 >
                   <Home className="w-4 h-4" />
@@ -205,8 +205,8 @@ export default function App() {
                   onClick={() => { setView('requests_all'); setSelectedRequestId(null); }}
                   className={`w-full flex items-center gap-3 px-3.5 py-2.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
                     view === 'requests_all'
-                      ? 'bg-[#4D83FF] text-white shadow-md shadow-blue-500/10 font-bold'
-                      : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                      ? 'bg-[#0F6C53] text-white shadow-md shadow-emerald-900/10 font-bold'
+                      : 'text-slate-400 hover:text-white hover:bg-white/10'
                   }`}
                 >
                   <List className="w-4 h-4" />
@@ -216,8 +216,8 @@ export default function App() {
                   onClick={() => { setView('requests_mine'); setSelectedRequestId(null); }}
                   className={`w-full flex items-center gap-3 px-3.5 py-2.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
                     view === 'requests_mine'
-                      ? 'bg-[#4D83FF] text-white shadow-md shadow-blue-500/10 font-bold'
-                      : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                      ? 'bg-[#0F6C53] text-white shadow-md shadow-emerald-900/10 font-bold'
+                      : 'text-slate-400 hover:text-white hover:bg-white/10'
                   }`}
                 >
                   <UserCheck className="w-4 h-4" />
@@ -227,8 +227,8 @@ export default function App() {
                   onClick={() => { setView('team'); setSelectedRequestId(null); }}
                   className={`w-full flex items-center gap-3 px-3.5 py-2.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
                     view === 'team'
-                      ? 'bg-[#4D83FF] text-white shadow-md shadow-blue-500/10 font-bold'
-                      : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                      ? 'bg-[#0F6C53] text-white shadow-md shadow-emerald-900/10 font-bold'
+                      : 'text-slate-400 hover:text-white hover:bg-white/10'
                   }`}
                 >
                   <Users className="w-4 h-4" />
@@ -238,8 +238,8 @@ export default function App() {
                   onClick={() => { setView('analytics'); setSelectedRequestId(null); }}
                   className={`w-full flex items-center gap-3 px-3.5 py-2.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
                     view === 'analytics'
-                      ? 'bg-[#4D83FF] text-white shadow-md shadow-blue-500/10 font-bold'
-                      : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                      ? 'bg-[#0F6C53] text-white shadow-md shadow-emerald-900/10 font-bold'
+                      : 'text-slate-400 hover:text-white hover:bg-white/10'
                   }`}
                 >
                   <BarChart3 className="w-4 h-4" />
@@ -249,8 +249,8 @@ export default function App() {
                   onClick={() => { setView('settings'); setSelectedRequestId(null); }}
                   className={`w-full flex items-center gap-3 px-3.5 py-2.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
                     view === 'settings'
-                      ? 'bg-[#4D83FF] text-white shadow-md shadow-blue-500/10 font-bold'
-                      : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                      ? 'bg-[#0F6C53] text-white shadow-md shadow-emerald-900/10 font-bold'
+                      : 'text-slate-400 hover:text-white hover:bg-white/10'
                   }`}
                 >
                   <Settings className="w-4 h-4" />
@@ -267,7 +267,7 @@ export default function App() {
             <div className="relative">
               <img 
                 src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" 
-                className="w-9 h-9 rounded-full object-cover border border-[#4D83FF]"
+                className="w-9 h-9 rounded-full object-cover border border-[#049460]"
                 alt="Аватар менеджера" 
                 referrerPolicy="no-referrer"
               />
@@ -299,12 +299,12 @@ export default function App() {
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} 
               className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-600 md:hidden"
             >
-              <Inbox className="w-5 h-5 text-[#4D83FF]" />
+              <Inbox className="w-5 h-5 text-[#049460]" />
             </button>
             <div>
               <h2 className="text-sm font-bold text-[#14213D] leading-tight flex items-center gap-1.5 uppercase tracking-wider">
-                <span className="w-1.5 h-3 bg-[#4D83FF] rounded-full inline-block" />
-                {view === 'home' && 'Сервис заявок'}
+                <span className="w-1.5 h-3 bg-[#049460] rounded-full inline-block" />
+                {view === 'home' && 'Главная'}
                 {view === 'requests_all' && 'Все входящие обращения'}
                 {view === 'requests_mine' && 'Мои персональные заявки'}
                 {view === 'team' && 'Команда Service Desk'}
@@ -326,7 +326,7 @@ export default function App() {
                 placeholder="Глобальный поиск..."
                 value={globalSearch}
                 onChange={(e) => setGlobalSearch(e.target.value)}
-                className="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200/80 focus:border-[#4D83FF] outline-none rounded-lg text-xs text-slate-900 placeholder:text-slate-400 transition focus:bg-white"
+                className="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200/80 focus:border-[#049460] outline-none rounded-lg text-xs text-slate-900 placeholder:text-slate-400 transition focus:bg-white"
               />
             </div>
 
@@ -354,7 +354,7 @@ export default function App() {
                       <span className="font-bold text-[#14213D]">Уведомления ({unreadNotificationsCount})</span>
                       <button 
                         onClick={handleMarkAllNotificationsAsRead}
-                        className="text-[10px] text-[#4D83FF] hover:underline font-semibold"
+                        className="text-[10px] text-[#049460] hover:underline font-semibold"
                       >
                         Прочитать все
                       </button>
@@ -382,13 +382,13 @@ export default function App() {
             <div className="flex items-center gap-2 border-l border-slate-200/80 pl-3">
               <img 
                 src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" 
-                className="w-8 h-8 rounded-lg object-cover border border-[#4D83FF]/30 hidden sm:block"
+                className="w-8 h-8 rounded-lg object-cover border border-[#049460]/30 hidden sm:block"
                 alt="Профиль" 
                 referrerPolicy="no-referrer"
               />
               <button
                 onClick={() => { setView('create_request'); setSelectedRequestId(null); }}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#4D83FF] hover:bg-blue-500 text-white font-bold rounded-lg text-xs transition shadow-md shadow-blue-500/20"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#049460] hover:bg-[#078454] text-white font-bold rounded-lg text-xs transition shadow-md shadow-blue-500/20"
               >
                 <PlusCircle className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">+ Создать заявку</span>
@@ -404,12 +404,12 @@ export default function App() {
               initial={{ opacity: 0, x: -100 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -100 }}
-              className="fixed inset-y-0 left-0 w-60 bg-[#172033] text-slate-300 z-50 flex flex-col justify-between shadow-2xl md:hidden"
+              className="fixed inset-y-0 left-0 w-[260px] bg-[#063D31] text-slate-300 z-50 flex flex-col justify-between shadow-2xl md:hidden"
             >
               <div>
                 <div className="p-4 border-b border-slate-800 flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className="w-8.5 h-8.5 rounded-lg bg-[#4D83FF] flex items-center justify-center text-white font-bold">
+                    <div className="w-8.5 h-8.5 rounded-lg bg-[#049460] flex items-center justify-center text-white font-bold">
                       СЗ
                     </div>
                     <span className="font-bold text-white text-sm">Сервис заявок</span>
@@ -420,7 +420,7 @@ export default function App() {
                   <button
                     onClick={() => { setView('home'); setSelectedRequestId(null); setIsMobileMenuOpen(false); }}
                     className={`w-full flex items-center gap-3 px-3.5 py-2.5 text-xs font-semibold rounded-lg transition-all ${
-                      view === 'home' ? 'bg-[#4D83FF] text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                      view === 'home' ? 'bg-[#049460] text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'
                     }`}
                   >
                     <Home className="w-4 h-4" />
@@ -429,7 +429,7 @@ export default function App() {
                   <button
                     onClick={() => { setView('requests_all'); setSelectedRequestId(null); setIsMobileMenuOpen(false); }}
                     className={`w-full flex items-center gap-3 px-3.5 py-2.5 text-xs font-semibold rounded-lg transition-all ${
-                      view === 'requests_all' ? 'bg-[#4D83FF] text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                      view === 'requests_all' ? 'bg-[#049460] text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'
                     }`}
                   >
                     <List className="w-4 h-4" />
@@ -438,7 +438,7 @@ export default function App() {
                   <button
                     onClick={() => { setView('requests_mine'); setSelectedRequestId(null); setIsMobileMenuOpen(false); }}
                     className={`w-full flex items-center gap-3 px-3.5 py-2.5 text-xs font-semibold rounded-lg transition-all ${
-                      view === 'requests_mine' ? 'bg-[#4D83FF] text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                      view === 'requests_mine' ? 'bg-[#049460] text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'
                     }`}
                   >
                     <UserCheck className="w-4 h-4" />
@@ -447,7 +447,7 @@ export default function App() {
                   <button
                     onClick={() => { setView('team'); setSelectedRequestId(null); setIsMobileMenuOpen(false); }}
                     className={`w-full flex items-center gap-3 px-3.5 py-2.5 text-xs font-semibold rounded-lg transition-all ${
-                      view === 'team' ? 'bg-[#4D83FF] text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                      view === 'team' ? 'bg-[#049460] text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'
                     }`}
                   >
                     <Users className="w-4 h-4" />
@@ -456,7 +456,7 @@ export default function App() {
                   <button
                     onClick={() => { setView('analytics'); setSelectedRequestId(null); setIsMobileMenuOpen(false); }}
                     className={`w-full flex items-center gap-3 px-3.5 py-2.5 text-xs font-semibold rounded-lg transition-all ${
-                      view === 'analytics' ? 'bg-[#4D83FF] text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                      view === 'analytics' ? 'bg-[#049460] text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'
                     }`}
                   >
                     <BarChart3 className="w-4 h-4" />
@@ -465,7 +465,7 @@ export default function App() {
                   <button
                     onClick={() => { setView('settings'); setSelectedRequestId(null); setIsMobileMenuOpen(false); }}
                     className={`w-full flex items-center gap-3 px-3.5 py-2.5 text-xs font-semibold rounded-lg transition-all ${
-                      view === 'settings' ? 'bg-[#4D83FF] text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                      view === 'settings' ? 'bg-[#049460] text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'
                     }`}
                   >
                     <Settings className="w-4 h-4" />
@@ -513,7 +513,7 @@ export default function App() {
           {/* Индикатор загрузки БД */}
           {isLoading && requests.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-32 space-y-4">
-              <div className="w-9 h-9 border-3 border-[#4D83FF] border-t-transparent rounded-full animate-spin" />
+              <div className="w-9 h-9 border-3 border-[#049460] border-t-transparent rounded-full animate-spin" />
               <p className="text-white text-xs font-semibold tracking-wide drop-shadow-md">
                 Инициализация Service Desk SQLite БД...
               </p>
@@ -563,7 +563,7 @@ export default function App() {
                 <div className="space-y-6">
                   <div className="bg-white rounded-2xl p-6 shadow-md border border-slate-100">
                     <h3 className="text-base font-bold text-[#14213D] mb-2 uppercase tracking-wider flex items-center gap-2">
-                      <Users className="w-5 h-5 text-[#4D83FF]" />
+                      <Users className="w-5 h-5 text-[#049460]" />
                       Инженерный состав команды
                     </h3>
                     <p className="text-xs text-[#64748B] mb-6 font-light">
@@ -574,7 +574,7 @@ export default function App() {
                         const memberRequests = requests.filter(r => r.status !== 'closed' && r.id % 4 === idx).length;
                         const score = 4.7 + (idx * 0.1);
                         return (
-                          <div key={idx} className="bg-[#F6F8FB]/50 border border-slate-100 rounded-xl p-4 flex flex-col justify-between hover:border-[#4D83FF]/30 transition group">
+                          <div key={idx} className="bg-[#F6F8FB]/50 border border-slate-100 rounded-xl p-4 flex flex-col justify-between hover:border-[#049460]/30 transition group">
                             <div className="flex items-center gap-3">
                               <div className="relative">
                                 <img src={member.avatar} className="w-11 h-11 rounded-full object-cover border-2 border-white shadow-sm" alt={member.name} referrerPolicy="no-referrer" />
@@ -583,7 +583,7 @@ export default function App() {
                                 }`} />
                               </div>
                               <div>
-                                <h4 className="font-bold text-xs text-[#14213D] group-hover:text-[#4D83FF] transition">{member.name}</h4>
+                                <h4 className="font-bold text-xs text-[#14213D] group-hover:text-[#049460] transition">{member.name}</h4>
                                 <p className="text-[10px] text-slate-400 font-medium">{member.role}</p>
                               </div>
                             </div>
@@ -613,14 +613,14 @@ export default function App() {
                 <div className="space-y-6">
                   <div className="bg-white rounded-2xl p-6 shadow-md border border-slate-100">
                     <h3 className="text-base font-bold text-[#14213D] mb-1 uppercase tracking-wider flex items-center gap-2">
-                      <BarChart3 className="w-5 h-5 text-[#4D83FF]" />
+                      <BarChart3 className="w-5 h-5 text-[#049460]" />
                       Аналитика производительности SLA
                     </h3>
                     <p className="text-xs text-[#64748B] mb-6">
                       Количественный анализ зарегистрированных обращений, распределение нагрузки по статусам и критичности.
                     </p>
                     <div className="p-4 bg-[#F6F8FB]/50 rounded-xl border border-slate-100 flex flex-col justify-center items-center h-64 text-center">
-                      <Clock className="w-10 h-10 text-[#4D83FF] mb-2 animate-pulse" />
+                      <Clock className="w-10 h-10 text-[#049460] mb-2 animate-pulse" />
                       <span className="font-bold text-xs text-[#14213D]">Интерактивная статистика</span>
                       <p className="text-[11px] text-slate-400 max-w-sm mt-1">
                         Всего обработано обращений: {requests.length}. Нагрузка на инженеров распределена равномерно. Среднее время закрытия инцидента — 2.4 часа.
@@ -634,7 +634,7 @@ export default function App() {
                 <div className="space-y-6">
                   <div className="bg-white rounded-2xl p-6 shadow-md border border-slate-100">
                     <h3 className="text-base font-bold text-[#14213D] mb-1 uppercase tracking-wider flex items-center gap-2">
-                      <Settings className="w-5 h-5 text-[#4D83FF]" />
+                      <Settings className="w-5 h-5 text-[#049460]" />
                       Настройки SLA и Конфигурация системы
                     </h3>
                     <p className="text-xs text-[#64748B] mb-6">
@@ -709,7 +709,7 @@ export default function App() {
           <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-[10px] text-slate-400 font-semibold tracking-wide uppercase">
             <div className="flex items-center gap-2">
               <Server className="w-3.5 h-3.5 text-slate-500" />
-              <span>База данных: <code className="bg-slate-900 border border-slate-800 rounded px-1.5 py-0.5 text-[#4D83FF] font-mono lowercase font-normal">data.sqlite</code></span>
+              <span>База данных: <code className="bg-slate-900 border border-slate-800 rounded px-1.5 py-0.5 text-[#049460] font-mono lowercase font-normal">data.sqlite</code></span>
             </div>
             <div>
               <span>© {new Date().getFullYear()} Сервис заявок • Все права защищены</span>

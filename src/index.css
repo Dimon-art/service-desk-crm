@@ -1,45 +1,101 @@
 @import "tailwindcss";
 
 :root {
-  --city-background: url("/src/assets/images/abudhabi_skyline_1788428772055.jpg");
-  --color-accent: #4D83FF;
-  --color-sidebar: #172033;
-  --color-bg: #F6F8FB;
-  --color-text-main: #14213D;
-  --color-text-muted: #64748B;
-  --color-success: #159570;
-  --color-progress: #E48A19;
-  --color-info: #8457D8;
-  --color-overdue: #D84A5A;
+  --color-accent: #2f7d5b;
+  --color-accent-dark: #246347;
+  --color-sidebar: #123c2d;
+  --color-sidebar-hover: #1a4d3a;
+  --color-bg: #f4f7f5;
+  --color-surface: #ffffff;
+  --color-text-main: #17352a;
+  --color-text-muted: #6b7d74;
+  --color-success: #2f8f68;
+  --color-progress: #d88924;
+  --color-info: #5f6fc7;
+  --color-overdue: #c95353;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
 }
 
 body {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  color: #14213D;
-  background-color: #F6F8FB;
+  margin: 0;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--color-text-main);
+  background: var(--color-bg);
 }
 
+/* Новая светлая рабочая область */
 .city-bg-container {
-  background-image: var(--city-background);
-  background-size: cover;
-  background-position: center;
-  background-attachment: fixed;
+  background-image: none !important;
+  background-color: var(--color-bg) !important;
+  background-size: auto;
+  background-position: initial;
+  background-attachment: initial;
   background-repeat: no-repeat;
 }
 
-/* Custom scrollbars */
+/* Старый тёмный overlay больше не используется */
+.city-bg-container > .absolute.inset-0 {
+  display: none !important;
+}
+
+/* Основная рабочая область */
+.city-bg-container main {
+  background: var(--color-bg);
+}
+
+/* Sidebar */
+aside {
+  background: var(--color-sidebar) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Активные пункты навигации */
+aside button[class*="bg-[#4D83FF]"] {
+  background: var(--color-accent) !important;
+  box-shadow: none !important;
+}
+
+/* Hover */
+aside button:hover {
+  background-color: var(--color-sidebar-hover);
+}
+
+/* Верхняя панель */
+.city-bg-container > header {
+  background: rgba(255, 255, 255, 0.96) !important;
+  border-bottom-color: #e4ebe7 !important;
+  box-shadow: 0 1px 8px rgba(18, 60, 45, 0.04) !important;
+}
+
+/* Убираем старую синюю визуальную доминанту */
+button[class*="bg-[#4D83FF]"] {
+  background-color: var(--color-accent) !important;
+}
+
+button[class*="bg-[#4D83FF]"]:hover {
+  background-color: var(--color-accent-dark) !important;
+}
+
+/* Скроллбар */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
+
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #cbd8d1;
   border-radius: 4px;
 }
-::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
-}
 
+::-webkit-scrollbar-thumb:hover {
+  background: #aebfb6;
+}

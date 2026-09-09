@@ -1,0 +1,9 @@
+﻿services:
+  service-desk-crm:
+    build: .
+    container_name: service-desk-crm
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./data.sqlite:/app/data.sqlite
+    restart: unless-stopped

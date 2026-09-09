@@ -1,4 +1,12 @@
-export type RequestStatus = 'new' | 'in_progress' | 'need_info' | 'closed';
+﻿export type RequestStatus =
+  | 'new'
+  | 'assigned'
+  | 'in_progress'
+  | 'need_info'
+  | 'completed'
+  | 'awaiting_confirmation'
+  | 'confirmed'
+  | 'closed';
 
 export interface SupportRequest {
   id: number;
@@ -8,6 +16,11 @@ export interface SupportRequest {
   description: string;
   status: RequestStatus;
   manager_comment: string;
+  assignee: string;
+  assigned_at: string | null;
+  accepted_at: string | null;
+  completed_at: string | null;
+  confirmed_at: string | null;
   created_at: string;
   updated_at: string;
 }

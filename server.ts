@@ -106,7 +106,7 @@ function loadDatabase(): DBStructure {
     }
     const content = fs.readFileSync(dbPath, 'utf-8');
     const parsed = JSON.parse(content || 'null');
-    
+
     // Check if it's the old flat array format
     if (Array.isArray(parsed)) {
       const requests: Request[] = parsed.map(r => ({
@@ -120,7 +120,7 @@ function loadDatabase(): DBStructure {
       }));
       const request_status_log: RequestStatusLog[] = [];
       let logIdCounter = 1;
-      
+
       // Auto-populate initial status history for existing items safely
       for (const req of requests) {
         // Add initial "new" status
@@ -131,7 +131,7 @@ function loadDatabase(): DBStructure {
           note: 'Автоматическая миграция: Заявка создана',
           created_at: req.created_at || new Date().toISOString()
         });
-        
+
         // If current status is different from "new", add another entry
         if (req.status !== 'new') {
           request_status_log.push({
@@ -143,7 +143,7 @@ function loadDatabase(): DBStructure {
           });
         }
       }
-      
+
       const migratedDb: DBStructure = {
         requests,
         archived_requests: [],
@@ -151,13 +151,13 @@ function loadDatabase(): DBStructure {
         escalations: [],
         notifications: []
       };
-      
+
       // Save migrated database immediately to file to prevent duplicate logging
       fs.writeFileSync(dbPath, JSON.stringify(migratedDb, null, 2));
       console.log('Database migrated successfully to relational object format');
       return migratedDb;
     }
-    
+
     // If it's already an object, ensure all tables/arrays exist and are initialized
     const dbObj = parsed || {};
     const requests = Array.isArray(dbObj.requests) ? dbObj.requests : [];
@@ -165,7 +165,7 @@ function loadDatabase(): DBStructure {
     const escalations = Array.isArray(dbObj.escalations) ? dbObj.escalations : [];
     const notifications = Array.isArray(dbObj.notifications) ? dbObj.notifications : [];
     const archived_requests = Array.isArray(dbObj.archived_requests) ? dbObj.archived_requests : [];
-    
+
     // Ensure all requests have access tokens
     let updated = false;
     for (const r of requests) {
@@ -194,7 +194,7 @@ function loadDatabase(): DBStructure {
         updated = true;
       }
     }
-    
+
     const db: DBStructure = {
       requests,
       archived_requests,
@@ -206,7 +206,7 @@ function loadDatabase(): DBStructure {
     if (updated) {
       fs.writeFileSync(dbPath, JSON.stringify(db, null, 2));
     }
-    
+
     return db;
   } catch (err) {
     console.error('Error reading/migrating database file:', err);
@@ -258,9 +258,9 @@ function isManager(req: express.Request): boolean {
 // Middleware to set manager auth cookie on demand via query parameter ?token=manager
 app.use((req, res, next) => {
   if (req.query.token === 'manager') {
-    res.cookie('manager_auth', '1', { 
-      httpOnly: true, 
-      sameSite: 'strict', 
+    res.cookie('manager_auth', '1', {
+      httpOnly: true,
+      sameSite: 'strict',
       maxAge: 86400000 // 24 hours
     });
   }
@@ -275,17 +275,17 @@ app.get('/api/requests', async (req, res) => {
     const accessToken = req.query.accessToken as string | undefined;
     const db = loadDatabase();
     let requests = db.requests;
-    
+
     if (status) {
       requests = requests.filter(r => r.status === status);
     }
     if (accessToken) {
       requests = requests.filter(r => r.access_token === accessToken);
     }
-    
+
     // Sort descending by ID
     const sorted = [...requests].sort((a, b) => b.id - a.id);
-    
+
     // Security: Mask email addresses for non-managers to prevent bulk email harvesting
     const secureRequests = sorted.map(r => {
       if (isManager(req) || (accessToken && r.access_token === accessToken)) {
@@ -295,8 +295,8 @@ app.get('/api/requests', async (req, res) => {
       const parts = email.split('@');
       if (parts.length === 2) {
         const [local, domain] = parts;
-        const maskedLocal = local.length > 2 
-          ? local[0] + '*'.repeat(local.length - 2) + local[local.length - 1] 
+        const maskedLocal = local.length > 2
+          ? local[0] + '*'.repeat(local.length - 2) + local[local.length - 1]
           : local[0] + '*';
         return {
           ...r,
@@ -309,19 +309,19 @@ app.get('/api/requests', async (req, res) => {
     // Backward-Compatible Pagination
     const page = parseInt(req.query.page as string, 10);
     const limit = parseInt(req.query.limit as string, 10);
-    
+
     if (!isNaN(page) && !isNaN(limit) && page > 0 && limit > 0) {
       const startIndex = (page - 1) * limit;
       const endIndex = page * limit;
       const paginatedItems = secureRequests.slice(startIndex, endIndex);
-      
+
       res.setHeader('X-Total-Count', secureRequests.length.toString());
       res.setHeader('X-Total-Pages', Math.ceil(secureRequests.length / limit).toString());
       res.setHeader('X-Current-Page', page.toString());
-      
+
       return res.json(paginatedItems);
     }
-    
+
     res.json(secureRequests);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -340,10 +340,7 @@ app.get('/api/requests/:id', async (req, res) => {
     if (!foundRequest) {
       return res.status(404).json({ error: 'Заявка не найдена' });
     }
-    
-    // Security check: if not a manager and doesn't have the correct accessToken for this request, mask the email
-    if (!isManager(req) && foundRequest.access_token !== accessToken) {
-      const email = request.requester_email || '';
+
     // Security check: if not a manager and doesn't have the correct accessToken for this request, mask the email
     if (!isManager(req) && foundRequest.access_token !== accessToken) {
       const email = foundRequest.requester_email || '';
@@ -351,21 +348,8 @@ app.get('/api/requests/:id', async (req, res) => {
       let maskedEmail = email;
       if (parts.length === 2) {
         const [local, domain] = parts;
-        const maskedLocal = local.length > 2 
-          ? local[0] + '*'.repeat(local.length - 2) + local[local.length - 1] 
-          : local[0] + '*';
-        maskedEmail = `${maskedLocal}@${domain}`;
-      }
-      return res.json({
-        ...foundRequest,
-        requester_email: maskedEmail
-
-      const parts = email.split('@');
-      let maskedEmail = email;
-      if (parts.length === 2) {
-        const [local, domain] = parts;
-        const maskedLocal = local.length > 2 
-          ? local[0] + '*'.repeat(local.length - 2) + local[local.length - 1] 
+        const maskedLocal = local.length > 2
+          ? local[0] + '*'.repeat(local.length - 2) + local[local.length - 1]
           : local[0] + '*';
         maskedEmail = `${maskedLocal}@${domain}`;
       }
@@ -374,7 +358,7 @@ app.get('/api/requests/:id', async (req, res) => {
         requester_email: maskedEmail
       });
     }
-    
+
     res.json(foundRequest);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -386,10 +370,10 @@ function simulateEmailNotification(db: DBStructure, requestId: number, recipient
   if (!db.notifications) {
     db.notifications = [];
   }
-  const nextNotificationId = db.notifications.length > 0 
-    ? Math.max(...db.notifications.map(item => item.id)) + 1 
+  const nextNotificationId = db.notifications.length > 0
+    ? Math.max(...db.notifications.map(item => item.id)) + 1
     : 1;
-  
+
   const newNotification: Notification = {
     id: nextNotificationId,
     request_id: requestId,
@@ -398,9 +382,9 @@ function simulateEmailNotification(db: DBStructure, requestId: number, recipient
     body,
     sent_at: new Date().toISOString()
   };
-  
+
   db.notifications.push(newNotification);
-  
+
   console.log('\n✉️  [ОТПРАВЛЕНО ИМИТАЦИОННОЕ УВЕДОМЛЕНИЕ]');
   console.log(`Кому: ${recipientEmail}`);
   console.log(`Тема: ${subject}`);
@@ -412,13 +396,13 @@ function simulateEmailNotification(db: DBStructure, requestId: number, recipient
 app.post('/api/requests', async (req, res) => {
   try {
     const { requester_name, requester_email, title, description } = req.body;
-    
+
     // Strict MVP validation matching verification scenario requirements
     if (!requester_name || !requester_name.trim()) {
-      return res.status(400).json({ error: 'Пожалуйста, введите имя сотрудника.' });
+      return res.status(400).json({ error: 'Пожалуйста, введите корректный адрес электронной почты.' });
     }
     if (!requester_email || !requester_email.trim() || !requester_email.includes('@')) {
-      return res.status(400).json({ error: 'Пожалуйста, введите имя сотрудника.' });
+      return res.status(400).json({ error: 'Пожалуйста, введите корректный адрес электронной почты.' });
     }
     if (!title || !title.trim()) {
       return res.status(400).json({ error: 'Пожалуйста, заполните тему заявки.' });
@@ -451,7 +435,7 @@ app.post('/api/requests', async (req, res) => {
     const now = new Date().toISOString();
     const nextId = db.requests.length > 0 ? Math.max(...db.requests.map(item => item.id)) + 1 : 1;
     const accessToken = generateToken();
-    
+
     const newRequest: Request = {
       id: nextId,
       requester_name: cleanName,
@@ -469,7 +453,7 @@ app.post('/api/requests', async (req, res) => {
       updated_at: now,
       access_token: accessToken
     };
-    
+
     db.requests.push(newRequest);
 
     // Auto-create log entry for new status
@@ -553,12 +537,12 @@ app.put('/api/requests/:id', async (req, res) => {
       };
       const allowed = VALID_TRANSITIONS[currentStatus] || [];
       if (!allowed.includes(status)) {
-        return res.status(400).json({ 
-          error: `Недопустимый переход статуса из "${currentStatus}" в "${status}". Допустимые варианты: ${allowed.join(", ")}` 
+        return res.status(400).json({
+          error: `Недопустимый переход статуса из "${currentStatus}" в "${status}". Допустимые варианты: ${allowed.join(", ")}`
         });
       }
     }
-    
+
     const statusChanged = status && status !== existing.status;
     const updatedStatus = (status || existing.status) as
       | 'new'
@@ -569,7 +553,7 @@ app.put('/api/requests/:id', async (req, res) => {
       | 'awaiting_confirmation'
       | 'confirmed'
       | 'closed';
-    
+
     // Escape HTML of the manager comment to prevent XSS
     const cleanComment = manager_comment !== undefined ? escapeHtml(manager_comment.trim()) : existing.manager_comment;
     const cleanAssignee = assignee !== undefined ? escapeHtml(assignee.trim()) : existing.assignee;
@@ -650,13 +634,13 @@ app.get('/api/requests/:id/status-history', async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
     const db = loadDatabase();
-    
+
     // Check if request exists first
 
     const logs = db.request_status_log.filter(log => log.request_id === id);
     // Sort from newest to oldest
     const sortedLogs = [...logs].sort((a, b) => b.id - a.id);
-    
+
     res.json(sortedLogs);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -668,11 +652,11 @@ app.get('/api/requests/:id/notifications', async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
     const db = loadDatabase();
-    
+
 
     const notifications = (db.notifications || []).filter(n => n.request_id === id);
     const sortedNotifications = [...notifications].sort((a, b) => b.id - a.id);
-    
+
     res.json(sortedNotifications);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -700,21 +684,21 @@ app.post('/api/backup/import', async (req, res) => {
     if (!isManager(req)) {
       return res.status(403).json({ error: 'Доступ запрещен: требуется токен менеджера' });
     }
-    
+
     const incomingDb = req.body;
     if (!incomingDb || typeof incomingDb !== 'object' || Array.isArray(incomingDb)) {
       return res.status(400).json({ error: 'Неверный формат резервной копии' });
     }
-    
+
     const requests = Array.isArray(incomingDb.requests) ? incomingDb.requests : null;
     const request_status_log = Array.isArray(incomingDb.request_status_log) ? incomingDb.request_status_log : null;
     const escalations = Array.isArray(incomingDb.escalations) ? incomingDb.escalations : null;
     const archived_requests = Array.isArray(incomingDb.archived_requests) ? incomingDb.archived_requests : [];
-    
+
     if (requests === null || request_status_log === null || escalations === null) {
       return res.status(400).json({ error: 'Отсутствуют обязательные таблицы в резервной копии' });
     }
-    
+
     const validatedDb: DBStructure = {
       requests,
       archived_requests,
@@ -722,7 +706,7 @@ app.post('/api/backup/import', async (req, res) => {
       escalations,
       notifications: Array.isArray(incomingDb.notifications) ? incomingDb.notifications : []
     };
-    
+
     await queueSaveDatabase(validatedDb);
     res.json({ success: true, message: 'База данных успешно импортирована из резервной копии' });
   } catch (error: any) {
@@ -752,5 +736,3 @@ async function startServer() {
 }
 
 startServer();
-
-
