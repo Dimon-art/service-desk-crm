@@ -344,6 +344,22 @@ app.get('/api/requests/:id', async (req, res) => {
     // Security check: if not a manager and doesn't have the correct accessToken for this request, mask the email
     if (!isManager(req) && foundRequest.access_token !== accessToken) {
       const email = request.requester_email || '';
+    // Security check: if not a manager and doesn't have the correct accessToken for this request, mask the email
+    if (!isManager(req) && foundRequest.access_token !== accessToken) {
+      const email = foundRequest.requester_email || '';
+      const parts = email.split('@');
+      let maskedEmail = email;
+      if (parts.length === 2) {
+        const [local, domain] = parts;
+        const maskedLocal = local.length > 2 
+          ? local[0] + '*'.repeat(local.length - 2) + local[local.length - 1] 
+          : local[0] + '*';
+        maskedEmail = `${maskedLocal}@${domain}`;
+      }
+      return res.json({
+        ...foundRequest,
+        requester_email: maskedEmail
+
       const parts = email.split('@');
       let maskedEmail = email;
       if (parts.length === 2) {
