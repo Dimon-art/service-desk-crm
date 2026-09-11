@@ -114,11 +114,25 @@ export default function App() {
     return created;
   };
 
+  const getStatusLabel = (value: RequestStatus): string => {
+    const labels: Record<RequestStatus, string> = {
+      new: 'Новая',
+      assigned: 'Назначена',
+      in_progress: 'В работе',
+      need_info: 'Нужна информация',
+      completed: 'Выполнена',
+      awaiting_confirmation: 'Ожидает подтверждения',
+      confirmed: 'Подтверждена',
+      closed: 'Закрыта',
+    };
+    return labels[value];
+  };
   // Handle request status & comment updates
   const handleUpdateStatusAndComment = async (
     id: number,
     status: RequestStatus,
-    comment: string
+    comment: string,
+    assignee?: string
   ): Promise<SupportRequest> => {
     const response = await fetch(`/api/requests/${id}`, {
       method: 'PUT',
@@ -126,7 +140,7 @@ export default function App() {
         'Content-Type': 'application/json',
         'x-manager-token': 'manager'
       },
-      body: JSON.stringify({ status, manager_comment: comment }),
+      body: JSON.stringify({ status, manager_comment: comment, assignee }),
     });
 
     if (!response.ok) {
@@ -144,7 +158,7 @@ export default function App() {
     setRequests((prev) => prev.map((r) => (r.id === id ? updated : r)));
     // Add real notification
     setNotifications(prev => [
-      { id: Date.now(), text: `Статус заявки #${id} изменен на "${status === 'in_progress' ? 'В работе' : status === 'need_info' ? 'Ожидание' : status === 'closed' ? 'Закрыта' : 'Новая'}"`, time: 'Только что', read: false },
+      { id: Date.now(), text: `Статус заявки #${id} изменен на "${getStatusLabel(status)}"`, time: 'Только что', read: false },
       ...prev
     ]);
     return updated;
@@ -724,3 +738,7 @@ export default function App() {
     </div>
   );
 }
+
+
+
+

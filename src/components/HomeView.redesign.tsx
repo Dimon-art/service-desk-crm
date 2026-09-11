@@ -19,7 +19,6 @@ import {
   UserCheck,
 } from 'lucide-react';
 import { SupportRequest, RequestStatus } from '../types';
-import { TEAM_MEMBERS } from '../App';
 
 interface HomeViewProps {
   requests: SupportRequest[];
@@ -174,7 +173,7 @@ export default function HomeView({
       }));
   }, [requests]);
 
-  const teamActive = TEAM_MEMBERS.filter((member) => member.status === 'online').length;
+  const teamActive = requests.filter((request) => request.assignee).length;
 
   const statCards = [
     {
@@ -484,3 +483,4 @@ export default function HomeView({
     </div>
   );
 }
+

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { 
   Inbox, 
   Search, 
@@ -18,7 +18,7 @@ import { TEAM_MEMBERS } from '../App';
 
 interface RequestListProps {
   requests: SupportRequest[];
-  mineFilterOnly?: boolean; // Filters strictly for "Дмитрий Петров"
+  mineFilterOnly?: boolean; // Filters strictly for "Р”РјРёС‚СЂРёР№ РџРµС‚СЂРѕРІ"
   onSelectRequest: (id: number) => void;
   onNavigateHome: () => void;
 }
@@ -74,7 +74,7 @@ export default function RequestList({
   const query = localSearch.toLowerCase().trim();
   const filteredRequests = extendedRequests.filter(req => {
     // Global/Mine filter toggle
-    if (mineFilterOnly && req.assignee !== 'Дмитрий Петров') return false;
+    if (mineFilterOnly && req.assignee !== 'Р”РјРёС‚СЂРёР№ РџРµС‚СЂРѕРІ') return false;
 
     // Search query
     const matchesSearch = 
@@ -107,14 +107,14 @@ export default function RequestList({
 
   const formatDeadline = (date: Date, isOverdue: boolean) => {
     if (isOverdue) {
-      return `Просрочен (${date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })})`;
+      return `РџСЂРѕСЃСЂРѕС‡РµРЅ (${date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })})`;
     }
     return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' });
   };
 
   return (
     <div className="space-y-5">
-      {/* Шапка раздела */}
+      {/* РЁР°РїРєР° СЂР°Р·РґРµР»Р° */}
       <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
           <button
@@ -122,34 +122,34 @@ export default function RequestList({
             className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-[#4D83FF] transition uppercase tracking-wider"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            Вернуться на главную
+            Р’РµСЂРЅСѓС‚СЊСЃСЏ РЅР° РіР»Р°РІРЅСѓСЋ
           </button>
           <h2 className="text-base font-extrabold text-[#14213D] uppercase tracking-wider">
-            {mineFilterOnly ? 'Мои персональные заявки (Исполнитель: Дмитрий Петров)' : 'Все зарегистрированные заявки'}
+            {mineFilterOnly ? 'РњРѕРё РїРµСЂСЃРѕРЅР°Р»СЊРЅС‹Рµ Р·Р°СЏРІРєРё (РСЃРїРѕР»РЅРёС‚РµР»СЊ: Р”РјРёС‚СЂРёР№ РџРµС‚СЂРѕРІ)' : 'Р’СЃРµ Р·Р°СЂРµРіРёСЃС‚СЂРёСЂРѕРІР°РЅРЅС‹Рµ Р·Р°СЏРІРєРё'}
           </h2>
           <p className="text-xs text-slate-400 font-light">
             {mineFilterOnly 
-              ? 'Список инцидентов, закрепленных за вашим профилем инженера.' 
-              : 'Интегральный реестр входящих обращений в службу Service Desk.'}
+              ? 'РЎРїРёСЃРѕРє РёРЅС†РёРґРµРЅС‚РѕРІ, Р·Р°РєСЂРµРїР»РµРЅРЅС‹С… Р·Р° РІР°С€РёРј РїСЂРѕС„РёР»РµРј РёРЅР¶РµРЅРµСЂР°.' 
+              : 'РРЅС‚РµРіСЂР°Р»СЊРЅС‹Р№ СЂРµРµСЃС‚СЂ РІС…РѕРґСЏС‰РёС… РѕР±СЂР°С‰РµРЅРёР№ РІ СЃР»СѓР¶Р±Сѓ Service Desk.'}
           </p>
         </div>
         
         <div className="flex items-center gap-2 text-[10px] font-extrabold text-slate-400 font-mono bg-[#F6F8FB] border border-slate-200/60 px-3 py-1.5 rounded-lg shrink-0">
           <ShieldAlert className="w-3.5 h-3.5 text-[#4D83FF]" />
-          <span>ПАНЕЛЬ МЕНЕДЖЕРА SLA</span>
+          <span>РџРђРќР•Р›Р¬ РњР•РќР•Р”Р–Р•Р Рђ SLA</span>
         </div>
       </div>
 
-      {/* Интерактивный рабочий блок реестра */}
+      {/* РРЅС‚РµСЂР°РєС‚РёРІРЅС‹Р№ СЂР°Р±РѕС‡РёР№ Р±Р»РѕРє СЂРµРµСЃС‚СЂР° */}
       <div className="bg-white rounded-2xl p-5 shadow-md border border-slate-100 flex flex-col gap-4">
         
-        {/* Поиск и фильтры */}
+        {/* РџРѕРёСЃРє Рё С„РёР»СЊС‚СЂС‹ */}
         <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3 border-b border-slate-100 pb-4">
           <div className="relative flex-1 max-w-lg">
             <Search className="absolute left-3.5 top-3 w-4 h-4 text-slate-400" />
             <input
               type="text"
-              placeholder="Поиск по теме, автору, описанию или номеру заявки..."
+              placeholder="РџРѕРёСЃРє РїРѕ С‚РµРјРµ, Р°РІС‚РѕСЂСѓ, РѕРїРёСЃР°РЅРёСЋ РёР»Рё РЅРѕРјРµСЂСѓ Р·Р°СЏРІРєРё..."
               value={localSearch}
               onChange={(e) => setLocalSearch(e.target.value)}
               className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200/80 focus:border-[#4D83FF] outline-none rounded-lg text-xs text-[#14213D] placeholder:text-slate-400 transition"
@@ -159,44 +159,44 @@ export default function RequestList({
           <div className="flex flex-wrap items-center gap-2 text-xs">
             <div className="flex items-center gap-1 text-slate-500 shrink-0">
               <SlidersHorizontal className="w-3.5 h-3.5" />
-              <span className="font-semibold text-[10px] uppercase tracking-wider">Фильтры:</span>
+              <span className="font-semibold text-[10px] uppercase tracking-wider">Р¤РёР»СЊС‚СЂС‹:</span>
             </div>
 
-            {/* Статус */}
+            {/* РЎС‚Р°С‚СѓСЃ */}
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as any)}
               className="bg-white border border-slate-200/70 text-slate-700 px-2.5 py-1 rounded-lg outline-none focus:border-[#4D83FF] font-medium"
             >
-              <option value="all">Все статусы</option>
+              <option value="all">Р’СЃРµ СЃС‚Р°С‚СѓСЃС‹</option>
               <option value="new">Новые</option>
               <option value="in_progress">В работе</option>
-              <option value="need_info">Нужна информация</option>
+              <option value="need_info">РќСѓР¶РЅР° РёРЅС„РѕСЂРјР°С†РёСЏ</option>
               <option value="on_verification">На проверке</option>
-              <option value="closed">Закрытые</option>
-              <option value="overdue">Просроченные</option>
+              <option value="closed">Р—Р°РєСЂС‹С‚С‹Рµ</option>
+              <option value="overdue">РџСЂРѕСЃСЂРѕС‡РµРЅРЅС‹Рµ</option>
             </select>
 
-            {/* Приоритет */}
+            {/* РџСЂРёРѕСЂРёС‚РµС‚ */}
             <select
               value={priorityFilter}
               onChange={(e) => setPriorityFilter(e.target.value as any)}
               className="bg-white border border-slate-200/70 text-slate-700 px-2.5 py-1 rounded-lg outline-none focus:border-[#4D83FF] font-medium"
             >
-              <option value="all">Все приоритеты</option>
+              <option value="all">Р’СЃРµ РїСЂРёРѕСЂРёС‚РµС‚С‹</option>
               <option value="Высокий">Высокий</option>
               <option value="Средний">Средний</option>
               <option value="Низкий">Низкий</option>
             </select>
 
-            {/* Исполнитель (скрыто если фильтр "Мои заявки") */}
+            {/* РСЃРїРѕР»РЅРёС‚РµР»СЊ (СЃРєСЂС‹С‚Рѕ РµСЃР»Рё С„РёР»СЊС‚СЂ "РњРѕРё Р·Р°СЏРІРєРё") */}
             {!mineFilterOnly && (
               <select
                 value={assigneeFilter}
                 onChange={(e) => setAssigneeFilter(e.target.value)}
                 className="bg-white border border-slate-200/70 text-slate-700 px-2.5 py-1 rounded-lg outline-none focus:border-[#4D83FF] font-medium"
               >
-                <option value="all">Все исполнители</option>
+                <option value="all">Р’СЃРµ РёСЃРїРѕР»РЅРёС‚РµР»Рё</option>
                 {TEAM_MEMBERS.map(m => (
                   <option key={m.name} value={m.name}>{m.name}</option>
                 ))}
@@ -213,25 +213,25 @@ export default function RequestList({
                 }}
                 className="text-[10px] text-[#D84A5A] hover:underline font-bold uppercase ml-auto"
               >
-                Сбросить
+                РЎР±СЂРѕСЃРёС‚СЊ
               </button>
             )}
           </div>
         </div>
 
-        {/* Сетка / Таблица */}
+        {/* РЎРµС‚РєР° / РўР°Р±Р»РёС†Р° */}
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="border-b border-slate-100 text-slate-400 font-bold uppercase tracking-wider text-[10px]">
-                <th className="py-3 px-2">№ заявки</th>
-                <th className="py-3 px-3">Тема</th>
-                <th className="py-3 px-3">Автор</th>
-                <th className="py-3 px-3">Ответственный</th>
-                <th className="py-3 px-3">Приоритет</th>
-                <th className="py-3 px-3">Статус</th>
-                <th className="py-3 px-3">Срок</th>
-                <th className="py-3 px-2 text-right">Действия</th>
+                <th className="py-3 px-2">в„– Р·Р°СЏРІРєРё</th>
+                <th className="py-3 px-3">РўРµРјР°</th>
+                <th className="py-3 px-3">РђРІС‚РѕСЂ</th>
+                <th className="py-3 px-3">РћС‚РІРµС‚СЃС‚РІРµРЅРЅС‹Р№</th>
+                <th className="py-3 px-3">РџСЂРёРѕСЂРёС‚РµС‚</th>
+                <th className="py-3 px-3">РЎС‚Р°С‚СѓСЃ</th>
+                <th className="py-3 px-3">РЎСЂРѕРє</th>
+                <th className="py-3 px-2 text-right">Р”РµР№СЃС‚РІРёСЏ</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
@@ -250,10 +250,10 @@ export default function RequestList({
                     badgeText = 'В работе';
                   } else if (req.displayStatus === 'need_info') {
                     badgeClass = 'bg-purple-50 text-[#8457D8] border-purple-200';
-                    badgeText = 'Ожидание';
+                    badgeText = 'Нужна информация';
                   } else if (req.displayStatus === 'on_verification') {
                     badgeClass = 'bg-indigo-50 text-indigo-700 border-indigo-200';
-                    badgeText = 'Проверка';
+                    badgeText = 'РџСЂРѕРІРµСЂРєР°';
                   } else if (req.displayStatus === 'closed') {
                     badgeClass = 'bg-emerald-50 text-[#159570] border-emerald-200';
                     badgeText = 'Закрыта';
@@ -269,17 +269,17 @@ export default function RequestList({
                       className="hover:bg-slate-50/65 transition-colors group cursor-pointer"
                       onClick={() => onSelectRequest(req.id)}
                     >
-                      {/* Кликабельный синий номер */}
+                      {/* РљР»РёРєР°Р±РµР»СЊРЅС‹Р№ СЃРёРЅРёР№ РЅРѕРјРµСЂ */}
                       <td className="py-3 px-2 font-mono text-[#4D83FF] hover:underline font-extrabold text-[11px]">
                         #{req.id}
                       </td>
 
-                      {/* Тема */}
+                      {/* РўРµРјР° */}
                       <td className="py-3 px-3 max-w-[200px] truncate font-bold text-[#14213D] group-hover:text-[#4D83FF] transition-colors">
                         {req.title}
                       </td>
 
-                      {/* Автор */}
+                      {/* РђРІС‚РѕСЂ */}
                       <td className="py-3 px-3 text-[#64748B]">
                         <div>
                           <span className="font-semibold text-slate-700 block">{req.requester_name}</span>
@@ -287,12 +287,12 @@ export default function RequestList({
                         </div>
                       </td>
 
-                      {/* Ответственный */}
+                      {/* РћС‚РІРµС‚СЃС‚РІРµРЅРЅС‹Р№ */}
                       <td className="py-3 px-3 font-semibold text-[#14213D]">
                         {req.assignee}
                       </td>
 
-                      {/* Приоритет с цветной точкой */}
+                      {/* РџСЂРёРѕСЂРёС‚РµС‚ СЃ С†РІРµС‚РЅРѕР№ С‚РѕС‡РєРѕР№ */}
                       <td className="py-3 px-3">
                         <span className="inline-flex items-center gap-1.5 font-semibold text-[#14213D]">
                           <span className={`w-2 h-2 rounded-full ${priorityDot}`} />
@@ -300,20 +300,20 @@ export default function RequestList({
                         </span>
                       </td>
 
-                      {/* Статус */}
+                      {/* РЎС‚Р°С‚СѓСЃ */}
                       <td className="py-3 px-3">
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[9px] font-bold border uppercase tracking-wider ${badgeClass}`}>
                           {badgeText}
                         </span>
                       </td>
 
-                      {/* Срок (выделен красным если просрочен) */}
+                      {/* РЎСЂРѕРє (РІС‹РґРµР»РµРЅ РєСЂР°СЃРЅС‹Рј РµСЃР»Рё РїСЂРѕСЃСЂРѕС‡РµРЅ) */}
                       <td className={`py-3 px-3 font-semibold ${req.isOverdue ? 'text-[#D84A5A] font-extrabold flex items-center gap-1' : 'text-[#64748B]'}`}>
                         {req.isOverdue && <AlertTriangle className="w-3.5 h-3.5 shrink-0" />}
                         {formatDeadline(req.deadline, req.isOverdue)}
                       </td>
 
-                      {/* Действия */}
+                      {/* Р”РµР№СЃС‚РІРёСЏ */}
                       <td className="py-3 px-2 text-right relative" onClick={(e) => e.stopPropagation()}>
                         <button 
                           onClick={() => setActiveMenuId(activeMenuId === req.id ? null : req.id)}
@@ -328,7 +328,7 @@ export default function RequestList({
                               onClick={() => { onSelectRequest(req.id); setActiveMenuId(null); }}
                               className="w-full text-left px-3 py-1.5 hover:bg-slate-50 font-semibold text-slate-700"
                             >
-                              Управление
+                              РЈРїСЂР°РІР»РµРЅРёРµ
                             </button>
                           </div>
                         )}
@@ -345,3 +345,7 @@ export default function RequestList({
     </div>
   );
 }
+
+
+
+
