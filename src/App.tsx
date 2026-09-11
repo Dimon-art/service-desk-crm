@@ -33,10 +33,25 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { SupportRequest, CreateRequestInput, RequestStatus } from './types';
+import { getStatusLabel } from './statusLabels';
 import HomeView from './components/HomeView.redesign';
 import CreateRequestForm from './components/CreateRequestForm';
 import RequestList from './components/RequestList';
 import RequestDetails from './components/RequestDetails';
+import RequesterView from './components/RequesterView';
+
+function getRequesterParams(): { requestId: number; accessToken: string } | null {
+  const params = new URLSearchParams(window.location.search);
+  const requestId = params.get('requestId');
+  const accessToken = params.get('accessToken');
+  if (requestId && accessToken) {
+    const id = parseInt(requestId, 10);
+    if (!isNaN(id) && id > 0) {
+      return { requestId: id, accessToken };
+    }
+  }
+  return null;
+}
 
 // Mock list of team members for display (deterministic selection based on request ID)
 export const TEAM_MEMBERS = [
@@ -47,6 +62,8 @@ export const TEAM_MEMBERS = [
 ];
 
 export default function App() {
+  const requesterParams = getRequesterParams();
+
   const [view, setView] = useState<'home' | 'requests_all' | 'requests_mine' | 'team' | 'analytics' | 'settings' | 'create_request' | 'details_request'>('home');
   const [requests, setRequests] = useState<SupportRequest[]>([]);
   const [selectedRequestId, setSelectedRequestId] = useState<number | null>(null);
@@ -114,19 +131,6 @@ export default function App() {
     return created;
   };
 
-  const getStatusLabel = (value: RequestStatus): string => {
-    const labels: Record<RequestStatus, string> = {
-      new: 'Новая',
-      assigned: 'Назначена',
-      in_progress: 'В работе',
-      need_info: 'Нужна информация',
-      completed: 'Выполнена',
-      awaiting_confirmation: 'Ожидает подтверждения',
-      confirmed: 'Подтверждена',
-      closed: 'Закрыта',
-    };
-    return labels[value];
-  };
   // Handle request status & comment updates
   const handleUpdateStatusAndComment = async (
     id: number,
@@ -140,7 +144,11 @@ export default function App() {
         'Content-Type': 'application/json',
         'x-manager-token': 'manager'
       },
-      body: JSON.stringify({ status, manager_comment: comment, assignee }),
+      body: JSON.stringify({
+        status,
+        manager_comment: comment,
+        ...(assignee !== undefined ? { assignee } : {}),
+      }),
     });
 
     if (!response.ok) {
@@ -155,7 +163,11 @@ export default function App() {
     }
 
     const updated: SupportRequest = await response.json();
-    setRequests((prev) => prev.map((r) => (r.id === id ? updated : r)));
+    if (status === 'closed') {
+      setRequests((prev) => prev.filter((r) => r.id !== id));
+    } else {
+      setRequests((prev) => prev.map((r) => (r.id === id ? updated : r)));
+    }
     // Add real notification
     setNotifications(prev => [
       { id: Date.now(), text: `Статус заявки #${id} изменен на "${getStatusLabel(status)}"`, time: 'Только что', read: false },
@@ -175,6 +187,15 @@ export default function App() {
   };
 
   const unreadNotificationsCount = notifications.filter(n => !n.read).length;
+
+  if (requesterParams) {
+    return (
+      <RequesterView
+        requestId={requesterParams.requestId}
+        accessToken={requesterParams.accessToken}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F6F8FB] flex text-[#14213D] antialiased font-sans select-none overflow-x-hidden">

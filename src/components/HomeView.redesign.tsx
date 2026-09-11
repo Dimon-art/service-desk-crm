@@ -19,6 +19,7 @@ import {
   UserCheck,
 } from 'lucide-react';
 import { SupportRequest, RequestStatus } from '../types';
+import { STATUS_LABELS_PLURAL } from '../statusLabels';
 
 interface HomeViewProps {
   requests: SupportRequest[];
@@ -46,7 +47,7 @@ const statusConfig: Record<
     icon: <Clock className="w-4 h-4" />,
   },
   need_info: {
-    label: 'Требуют ответа',
+    label: 'Нужна информация',
     accent: '#9A56D8',
     bg: '#F0E2FB',
     text: '#8744B8',
@@ -60,28 +61,28 @@ const statusConfig: Record<
     icon: <CheckCircle className="w-4 h-4" />,
   },
   assigned: {
-    label: '?????????',
+    label: STATUS_LABELS_PLURAL.assigned,
     accent: '#D99A24',
     bg: '#FFF3D6',
     text: '#9A6812',
     icon: <Clock className="w-4 h-4" />,
   },
   completed: {
-    label: '?????????',
+    label: STATUS_LABELS_PLURAL.completed,
     accent: '#4388D6',
     bg: '#E3F0FF',
     text: '#2868A8',
     icon: <CheckCircle className="w-4 h-4" />,
   },
   awaiting_confirmation: {
-    label: '??????? ?????????????',
+    label: STATUS_LABELS_PLURAL.awaiting_confirmation,
     accent: '#E89427',
     bg: '#FFF0D8',
     text: '#B96814',
     icon: <Clock className="w-4 h-4" />,
   },
   confirmed: {
-    label: '????????????',
+    label: STATUS_LABELS_PLURAL.confirmed,
     accent: '#20A76E',
     bg: '#DDF4E7',
     text: '#237F51',
@@ -377,7 +378,7 @@ export default function HomeView({
                               className="cursor-pointer hover:bg-[#F8FBFA] transition"
                             >
                               <td className="px-5 py-3.5 border-b border-[#EDF2EF] text-sm font-bold text-[#1D2D28]">
-                                #{request.id} В· {title}
+                                #{request.id} · {title}
                               </td>
                               <td className="px-5 py-3.5 border-b border-[#EDF2EF] text-sm text-[#33413C]">
                                 {client}
@@ -438,7 +439,7 @@ export default function HomeView({
                           {item.title}
                         </span>
                         <span className="block mt-1 text-[11px] text-[#83908B]">
-                          {item.status} В· {item.date}
+                          {item.status} · {item.date}
                         </span>
                       </span>
                     </button>
