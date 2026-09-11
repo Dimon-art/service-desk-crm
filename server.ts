@@ -328,6 +328,48 @@ app.get('/api/requests', async (req, res) => {
   }
 });
 
+// GET archived (closed) requests — manager only
+app.get('/api/archived-requests', async (req, res) => {
+  try {
+    if (!isManager(req)) {
+      return res.status(403).json({ error: 'Доступ запрещен: архив доступен только менеджеру' });
+    }
+
+    const q = (req.query.q as string | undefined)?.toLowerCase().trim();
+    const db = loadDatabase();
+    let archived = [...db.archived_requests];
+
+    if (q) {
+      archived = archived.filter((r) =>
+        r.title.toLowerCase().includes(q) ||
+        r.requester_name.toLowerCase().includes(q) ||
+        (r.assignee || '').toLowerCase().includes(q) ||
+        r.id.toString() === q
+      );
+    }
+
+    const sorted = archived.sort((a, b) => b.id - a.id);
+
+    const page = parseInt(req.query.page as string, 10);
+    const limit = parseInt(req.query.limit as string, 10);
+
+    if (!isNaN(page) && !isNaN(limit) && page > 0 && limit > 0) {
+      const startIndex = (page - 1) * limit;
+      const paginatedItems = sorted.slice(startIndex, startIndex + limit);
+
+      res.setHeader('X-Total-Count', sorted.length.toString());
+      res.setHeader('X-Total-Pages', Math.ceil(sorted.length / limit).toString());
+      res.setHeader('X-Current-Page', page.toString());
+
+      return res.json(paginatedItems);
+    }
+
+    res.json(sorted);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // GET request by ID
 app.get('/api/requests/:id', async (req, res) => {
   try {
@@ -399,7 +441,7 @@ app.post('/api/requests', async (req, res) => {
 
     // Strict MVP validation matching verification scenario requirements
     if (!requester_name || !requester_name.trim()) {
-      return res.status(400).json({ error: 'Пожалуйста, введите корректный адрес электронной почты.' });
+      return res.status(400).json({ error: 'Пожалуйста, введите ваше имя.' });
     }
     if (!requester_email || !requester_email.trim() || !requester_email.includes('@')) {
       return res.status(400).json({ error: 'Пожалуйста, введите корректный адрес электронной почты.' });

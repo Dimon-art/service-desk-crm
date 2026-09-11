@@ -23,6 +23,7 @@ import { STATUS_LABELS_PLURAL } from '../statusLabels';
 
 interface HomeViewProps {
   requests: SupportRequest[];
+  archivedCount?: number;
   globalSearch: string;
   onSelectRequest: (id: number) => void;
   onNavigate: (view: string) => void;
@@ -117,6 +118,7 @@ function formatDate(value: string) {
 
 export default function HomeView({
   requests,
+  archivedCount = 0,
   globalSearch,
   onSelectRequest,
   onNavigate,
@@ -146,7 +148,7 @@ export default function HomeView({
       new: requests.filter((r) => r.status === 'new').length,
       in_progress: requests.filter((r) => r.status === 'in_progress').length,
       need_info: requests.filter((r) => r.status === 'need_info').length,
-      closed: requests.filter((r) => r.status === 'closed').length,
+      closed: archivedCount,
       overdue: requests.filter((r) => {
         const item = r as any;
         const deadline = item.deadline || item.due_date || item.sla_deadline;
