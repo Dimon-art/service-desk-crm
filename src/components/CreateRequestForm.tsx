@@ -76,6 +76,10 @@ export default function CreateRequestForm({
     }
   };
 
+  const trackingUrl = successRequest?.access_token
+    ? `${window.location.origin}/?requestId=${successRequest.id}&accessToken=${successRequest.access_token}`
+    : null;
+
   if (successRequest) {
     return (
       <div className="max-w-xl mx-auto bg-white border border-slate-100 rounded-2xl p-6 sm:p-8 text-center space-y-6 shadow-md">
@@ -107,6 +111,23 @@ export default function CreateRequestForm({
             <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-[#4D83FF] border border-blue-100 uppercase tracking-wider">Новая</span>
           </div>
         </div>
+
+        {trackingUrl && (
+          <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 text-left space-y-2">
+            <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
+              Ссылка для отслеживания
+            </p>
+            <a
+              href={trackingUrl}
+              className="block text-xs font-mono text-[#4D83FF] break-all hover:underline"
+            >
+              {trackingUrl}
+            </a>
+            <p className="text-[11px] text-slate-500">
+              Сохраните эту ссылку — по ней вы сможете отслеживать статус и подтвердить выполнение работ.
+            </p>
+          </div>
+        )}
 
         <div className="flex flex-col sm:flex-row gap-2.5 pt-4 justify-center">
           <button

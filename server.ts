@@ -469,7 +469,7 @@ app.post('/api/requests', async (req, res) => {
 
     // Simulate sending email
     const emailSubject = `Ваша заявка #${nextId} получена: "${cleanTitle}"`;
-    const emailBody = `Здравствуйте, ${cleanName}!\n\nВаша заявка #${nextId} успешно создана и зарегистрирована.\nТекущий статус: Новая.\n\nСсылка для отслеживания заявки:\nhttp://localhost:3000/api/requests/${nextId}?accessToken=${accessToken}\n\nСпасибо за обращение!`;
+    const emailBody = `Здравствуйте, ${cleanName}!\n\nВаша заявка #${nextId} успешно создана и зарегистрирована.\nТекущий статус: Новая.\n\nСсылка для отслеживания заявки:\nhttp://localhost:3000/?requestId=${nextId}&accessToken=${accessToken}\n\nСпасибо за обращение!`;
     simulateEmailNotification(db, nextId, cleanEmail, emailSubject, emailBody);
 
     await queueSaveDatabase(db);
@@ -607,7 +607,7 @@ app.put('/api/requests/:id', async (req, res) => {
 
       // Simulate sending status update email
       const emailSubject = `Статус вашей заявки #${id} изменен: "${updatedStatus}"`;
-      const emailBody = `Здравствуйте, ${existing.requester_name}!\n\nСтатус вашей заявки #${id} ("${existing.title}") был успешно изменен на: "${updatedStatus}".\n\nКомментарий менеджера:\n${cleanComment || 'Комментарий отсутствует.'}\n\nСсылка для отслеживания:\nhttp://localhost:3000/api/requests/${id}?accessToken=${existing.access_token || ''}`;
+      const emailBody = `Здравствуйте, ${existing.requester_name}!\n\nСтатус вашей заявки #${id} ("${existing.title}") был успешно изменен на: "${updatedStatus}".\n\nКомментарий менеджера:\n${cleanComment || 'Комментарий отсутствует.'}\n\nСсылка для отслеживания:\nhttp://localhost:3000/?requestId=${id}&accessToken=${existing.access_token || ''}`;
       simulateEmailNotification(db, id, existing.requester_email, emailSubject, emailBody);
     }
 
@@ -624,6 +624,88 @@ app.put('/api/requests/:id', async (req, res) => {
 
     await queueSaveDatabase(db);
     res.json(responseRequest);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST requester response (confirm or reject completion)
+app.post('/api/requests/:id/requester-response', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const { accessToken, decision, comment } = req.body;
+
+    if (!accessToken || typeof accessToken !== 'string') {
+      return res.status(400).json({ error: 'Требуется токен доступа' });
+    }
+
+    if (decision !== 'confirmed' && decision !== 'rejected') {
+      return res.status(400).json({ error: 'Недопустимое решение. Используйте confirmed или rejected.' });
+    }
+
+    if (comment && typeof comment === 'string' && comment.length > 5000) {
+      return res.status(400).json({ error: 'Комментарий не должен превышать 5000 символов.' });
+    }
+
+    const db = loadDatabase();
+    const existingIndex = db.requests.findIndex(r => r.id === id);
+    if (existingIndex === -1) {
+      return res.status(404).json({ error: 'Заявка не найдена' });
+    }
+
+    const existing = db.requests[existingIndex];
+
+    if (existing.access_token !== accessToken) {
+      return res.status(403).json({ error: 'Неверный токен доступа' });
+    }
+
+    if (existing.status !== 'awaiting_confirmation') {
+      return res.status(400).json({
+        error: `Подтверждение недоступно для статуса «${existing.status}». Ожидается статус awaiting_confirmation.`
+      });
+    }
+
+    const now = new Date().toISOString();
+    const newStatus = decision === 'confirmed' ? 'confirmed' : 'in_progress';
+    const cleanComment = comment !== undefined ? escapeHtml(String(comment).trim()) : existing.manager_comment;
+
+    const lifecycleUpdate: Partial<Request> = {
+      status: newStatus,
+      manager_comment: cleanComment,
+      updated_at: now,
+    };
+
+    if (newStatus === 'confirmed') {
+      lifecycleUpdate.confirmed_at = now;
+    }
+
+    db.requests[existingIndex] = {
+      ...existing,
+      ...lifecycleUpdate,
+    };
+
+    const nextLogId = db.request_status_log.length > 0
+      ? Math.max(...db.request_status_log.map(item => item.id)) + 1
+      : 1;
+
+    db.request_status_log.push({
+      id: nextLogId,
+      request_id: id,
+      status: newStatus,
+      note: decision === 'confirmed'
+        ? 'Заявитель подтвердил выполнение работ'
+        : 'Заявитель вернул заявку в работу',
+      created_at: now,
+    });
+
+    const emailSubject = decision === 'confirmed'
+      ? `Заявка #${id} подтверждена заявителем`
+      : `Заявка #${id} возвращена в работу заявителем`;
+    const emailBody = `Здравствуйте, ${existing.requester_name}!\n\nВаш ответ по заявке #${id} ("${existing.title}") зарегистрирован.\nНовый статус: ${newStatus}.\n\nСсылка для отслеживания:\nhttp://localhost:3000/?requestId=${id}&accessToken=${existing.access_token}`;
+    simulateEmailNotification(db, id, existing.requester_email, emailSubject, emailBody);
+
+    await queueSaveDatabase(db);
+    res.json(db.requests[existingIndex]);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }

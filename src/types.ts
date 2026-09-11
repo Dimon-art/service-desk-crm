@@ -23,6 +23,7 @@ export interface SupportRequest {
   confirmed_at: string | null;
   created_at: string;
   updated_at: string;
+  access_token?: string;
 }
 
 export interface CreateRequestInput {
