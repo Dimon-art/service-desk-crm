@@ -29,14 +29,32 @@ import {
   ShieldCheck, 
   Database,
   ArrowUpRight,
-  Info
+  Info,
+  Archive
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { SupportRequest, CreateRequestInput, RequestStatus } from './types';
+import { getStatusLabel } from './statusLabels';
 import HomeView from './components/HomeView.redesign';
 import CreateRequestForm from './components/CreateRequestForm';
 import RequestList from './components/RequestList';
 import RequestDetails from './components/RequestDetails';
+import RequesterView from './components/RequesterView';
+import ArchiveList from './components/ArchiveList';
+import { MANAGER_API_HEADERS } from './roles';
+
+function getRequesterParams(): { requestId: number; accessToken: string } | null {
+  const params = new URLSearchParams(window.location.search);
+  const requestId = params.get('requestId');
+  const accessToken = params.get('accessToken');
+  if (requestId && accessToken) {
+    const id = parseInt(requestId, 10);
+    if (!isNaN(id) && id > 0) {
+      return { requestId: id, accessToken };
+    }
+  }
+  return null;
+}
 
 // Mock list of team members for display (deterministic selection based on request ID)
 export const TEAM_MEMBERS = [
@@ -47,8 +65,13 @@ export const TEAM_MEMBERS = [
 ];
 
 export default function App() {
-  const [view, setView] = useState<'home' | 'requests_all' | 'requests_mine' | 'team' | 'analytics' | 'settings' | 'create_request' | 'details_request'>('home');
+  const requesterParams = getRequesterParams();
+
+  const [view, setView] = useState<'home' | 'requests_all' | 'requests_mine' | 'requests_archive' | 'team' | 'analytics' | 'settings' | 'create_request' | 'details_request'>('home');
   const [requests, setRequests] = useState<SupportRequest[]>([]);
+  const [archivedRequests, setArchivedRequests] = useState<SupportRequest[]>([]);
+  const [isArchiveLoading, setIsArchiveLoading] = useState(false);
+  const [detailsSource, setDetailsSource] = useState<'active' | 'archive'>('active');
   const [selectedRequestId, setSelectedRequestId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -66,7 +89,7 @@ export default function App() {
     setError(null);
     try {
       const response = await fetch('/api/requests', {
-        headers: { 'x-manager-token': 'manager' }
+        headers: MANAGER_API_HEADERS,
       });
       if (!response.ok) {
         throw new Error('Ошибка при загрузке заявок с сервера');
@@ -81,8 +104,28 @@ export default function App() {
     }
   };
 
+  const fetchArchivedRequests = async () => {
+    setIsArchiveLoading(true);
+    try {
+      const response = await fetch('/api/archived-requests', {
+        headers: MANAGER_API_HEADERS,
+      });
+      if (!response.ok) {
+        throw new Error('Ошибка при загрузке архива заявок');
+      }
+      const data = await response.json();
+      setArchivedRequests(data);
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || 'Ошибка загрузки архива');
+    } finally {
+      setIsArchiveLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchRequests();
+    fetchArchivedRequests();
   }, []);
 
   // Handle request creation
@@ -118,15 +161,20 @@ export default function App() {
   const handleUpdateStatusAndComment = async (
     id: number,
     status: RequestStatus,
-    comment: string
+    comment: string,
+    assignee?: string
   ): Promise<SupportRequest> => {
     const response = await fetch(`/api/requests/${id}`, {
       method: 'PUT',
-      headers: { 
+      headers: {
         'Content-Type': 'application/json',
-        'x-manager-token': 'manager'
+        ...MANAGER_API_HEADERS,
       },
-      body: JSON.stringify({ status, manager_comment: comment }),
+      body: JSON.stringify({
+        status,
+        manager_comment: comment,
+        ...(assignee !== undefined ? { assignee } : {}),
+      }),
     });
 
     if (!response.ok) {
@@ -141,16 +189,27 @@ export default function App() {
     }
 
     const updated: SupportRequest = await response.json();
-    setRequests((prev) => prev.map((r) => (r.id === id ? updated : r)));
+    if (status === 'closed') {
+      setRequests((prev) => prev.filter((r) => r.id !== id));
+      setArchivedRequests((prev) => [updated, ...prev.filter((r) => r.id !== id)]);
+      setView('requests_archive');
+      setSelectedRequestId(null);
+      setDetailsSource('active');
+    } else {
+      setRequests((prev) => prev.map((r) => (r.id === id ? updated : r)));
+    }
     // Add real notification
     setNotifications(prev => [
-      { id: Date.now(), text: `Статус заявки #${id} изменен на "${status === 'in_progress' ? 'В работе' : status === 'need_info' ? 'Ожидание' : status === 'closed' ? 'Закрыта' : 'Новая'}"`, time: 'Только что', read: false },
+      { id: Date.now(), text: `Статус заявки #${id} изменен на "${getStatusLabel(status)}"`, time: 'Только что', read: false },
       ...prev
     ]);
     return updated;
   };
 
-  const selectedRequest = requests.find((r) => r.id === selectedRequestId);
+  const selectedRequest =
+    requests.find((r) => r.id === selectedRequestId) ||
+    archivedRequests.find((r) => r.id === selectedRequestId);
+  const isArchivedDetails = detailsSource === 'archive' || selectedRequest?.status === 'closed';
 
   const handleNotificationClick = (id: number) => {
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
@@ -161,6 +220,15 @@ export default function App() {
   };
 
   const unreadNotificationsCount = notifications.filter(n => !n.read).length;
+
+  if (requesterParams) {
+    return (
+      <RequesterView
+        requestId={requesterParams.requestId}
+        accessToken={requesterParams.accessToken}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F6F8FB] flex text-[#14213D] antialiased font-sans select-none overflow-x-hidden">
@@ -222,6 +290,17 @@ export default function App() {
                 >
                   <UserCheck className="w-4 h-4" />
                   <span>Мои заявки</span>
+                </button>
+                <button
+                  onClick={() => { setView('requests_archive'); setSelectedRequestId(null); fetchArchivedRequests(); }}
+                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                    view === 'requests_archive'
+                      ? 'bg-[#0F6C53] text-white shadow-md shadow-emerald-900/10 font-bold'
+                      : 'text-slate-400 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  <Archive className="w-4 h-4" />
+                  <span>Архив</span>
                 </button>
                 <button
                   onClick={() => { setView('team'); setSelectedRequestId(null); }}
@@ -307,6 +386,7 @@ export default function App() {
                 {view === 'home' && 'Главная'}
                 {view === 'requests_all' && 'Все входящие обращения'}
                 {view === 'requests_mine' && 'Мои персональные заявки'}
+                {view === 'requests_archive' && 'Архив закрытых заявок'}
                 {view === 'team' && 'Команда Service Desk'}
                 {view === 'analytics' && 'Статистический мониторинг'}
                 {view === 'settings' && 'Конфигурация SLA'}
@@ -445,6 +525,15 @@ export default function App() {
                     <span>Мои заявки</span>
                   </button>
                   <button
+                    onClick={() => { setView('requests_archive'); setSelectedRequestId(null); setIsMobileMenuOpen(false); fetchArchivedRequests(); }}
+                    className={`w-full flex items-center gap-3 px-3.5 py-2.5 text-xs font-semibold rounded-lg transition-all ${
+                      view === 'requests_archive' ? 'bg-[#049460] text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                    }`}
+                  >
+                    <Archive className="w-4 h-4" />
+                    <span>Архив</span>
+                  </button>
+                  <button
                     onClick={() => { setView('team'); setSelectedRequestId(null); setIsMobileMenuOpen(false); }}
                     className={`w-full flex items-center gap-3 px-3.5 py-2.5 text-xs font-semibold rounded-lg transition-all ${
                       view === 'team' ? 'bg-[#049460] text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'
@@ -523,15 +612,20 @@ export default function App() {
               {view === 'home' && (
                 <HomeView
                   requests={requests}
+                  archivedCount={archivedRequests.length}
                   globalSearch={globalSearch}
                   onSelectRequest={(id) => {
                     setSelectedRequestId(id);
+                    setDetailsSource('active');
                     setView('details_request');
                   }}
                   onNavigate={(v) => {
                     if (v === 'create') setView('create_request');
                     else if (v === 'list') setView('requests_all');
-                    else setView(v as any);
+                    else if (v === 'archive') {
+                      setView('requests_archive');
+                      fetchArchivedRequests();
+                    } else setView(v as any);
                   }}
                 />
               )}
@@ -541,6 +635,7 @@ export default function App() {
                   requests={requests}
                   onSelectRequest={(id) => {
                     setSelectedRequestId(id);
+                    setDetailsSource('active');
                     setView('details_request');
                   }}
                   onNavigateHome={() => setView('home')}
@@ -553,6 +648,20 @@ export default function App() {
                   mineFilterOnly={true} // special filter
                   onSelectRequest={(id) => {
                     setSelectedRequestId(id);
+                    setDetailsSource('active');
+                    setView('details_request');
+                  }}
+                  onNavigateHome={() => setView('home')}
+                />
+              )}
+
+              {view === 'requests_archive' && (
+                <ArchiveList
+                  requests={archivedRequests}
+                  isLoading={isArchiveLoading}
+                  onSelectRequest={(id) => {
+                    setSelectedRequestId(id);
+                    setDetailsSource('archive');
                     setView('details_request');
                   }}
                   onNavigateHome={() => setView('home')}
@@ -693,10 +802,12 @@ export default function App() {
               {view === 'details_request' && selectedRequest && (
                 <RequestDetails
                   request={selectedRequest}
+                  readOnly={isArchivedDetails}
                   onUpdateStatusAndComment={handleUpdateStatusAndComment}
                   onBackToList={() => {
-                    setView('requests_all');
+                    setView(isArchivedDetails ? 'requests_archive' : 'requests_all');
                     setSelectedRequestId(null);
+                    setDetailsSource('active');
                   }}
                 />
               )}
@@ -724,3 +835,7 @@ export default function App() {
     </div>
   );
 }
+
+
+
+

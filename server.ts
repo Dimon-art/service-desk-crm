@@ -328,6 +328,48 @@ app.get('/api/requests', async (req, res) => {
   }
 });
 
+// GET archived (closed) requests — manager only
+app.get('/api/archived-requests', async (req, res) => {
+  try {
+    if (!isManager(req)) {
+      return res.status(403).json({ error: 'Доступ запрещен: архив доступен только менеджеру' });
+    }
+
+    const q = (req.query.q as string | undefined)?.toLowerCase().trim();
+    const db = loadDatabase();
+    let archived = [...db.archived_requests];
+
+    if (q) {
+      archived = archived.filter((r) =>
+        r.title.toLowerCase().includes(q) ||
+        r.requester_name.toLowerCase().includes(q) ||
+        (r.assignee || '').toLowerCase().includes(q) ||
+        r.id.toString() === q
+      );
+    }
+
+    const sorted = archived.sort((a, b) => b.id - a.id);
+
+    const page = parseInt(req.query.page as string, 10);
+    const limit = parseInt(req.query.limit as string, 10);
+
+    if (!isNaN(page) && !isNaN(limit) && page > 0 && limit > 0) {
+      const startIndex = (page - 1) * limit;
+      const paginatedItems = sorted.slice(startIndex, startIndex + limit);
+
+      res.setHeader('X-Total-Count', sorted.length.toString());
+      res.setHeader('X-Total-Pages', Math.ceil(sorted.length / limit).toString());
+      res.setHeader('X-Current-Page', page.toString());
+
+      return res.json(paginatedItems);
+    }
+
+    res.json(sorted);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // GET request by ID
 app.get('/api/requests/:id', async (req, res) => {
   try {
@@ -399,7 +441,7 @@ app.post('/api/requests', async (req, res) => {
 
     // Strict MVP validation matching verification scenario requirements
     if (!requester_name || !requester_name.trim()) {
-      return res.status(400).json({ error: 'Пожалуйста, введите корректный адрес электронной почты.' });
+      return res.status(400).json({ error: 'Пожалуйста, введите ваше имя.' });
     }
     if (!requester_email || !requester_email.trim() || !requester_email.includes('@')) {
       return res.status(400).json({ error: 'Пожалуйста, введите корректный адрес электронной почты.' });
@@ -469,7 +511,7 @@ app.post('/api/requests', async (req, res) => {
 
     // Simulate sending email
     const emailSubject = `Ваша заявка #${nextId} получена: "${cleanTitle}"`;
-    const emailBody = `Здравствуйте, ${cleanName}!\n\nВаша заявка #${nextId} успешно создана и зарегистрирована.\nТекущий статус: Новая.\n\nСсылка для отслеживания заявки:\nhttp://localhost:3000/api/requests/${nextId}?accessToken=${accessToken}\n\nСпасибо за обращение!`;
+    const emailBody = `Здравствуйте, ${cleanName}!\n\nВаша заявка #${nextId} успешно создана и зарегистрирована.\nТекущий статус: Новая.\n\nСсылка для отслеживания заявки:\nhttp://localhost:3000/?requestId=${nextId}&accessToken=${accessToken}\n\nСпасибо за обращение!`;
     simulateEmailNotification(db, nextId, cleanEmail, emailSubject, emailBody);
 
     await queueSaveDatabase(db);
@@ -607,7 +649,7 @@ app.put('/api/requests/:id', async (req, res) => {
 
       // Simulate sending status update email
       const emailSubject = `Статус вашей заявки #${id} изменен: "${updatedStatus}"`;
-      const emailBody = `Здравствуйте, ${existing.requester_name}!\n\nСтатус вашей заявки #${id} ("${existing.title}") был успешно изменен на: "${updatedStatus}".\n\nКомментарий менеджера:\n${cleanComment || 'Комментарий отсутствует.'}\n\nСсылка для отслеживания:\nhttp://localhost:3000/api/requests/${id}?accessToken=${existing.access_token || ''}`;
+      const emailBody = `Здравствуйте, ${existing.requester_name}!\n\nСтатус вашей заявки #${id} ("${existing.title}") был успешно изменен на: "${updatedStatus}".\n\nКомментарий менеджера:\n${cleanComment || 'Комментарий отсутствует.'}\n\nСсылка для отслеживания:\nhttp://localhost:3000/?requestId=${id}&accessToken=${existing.access_token || ''}`;
       simulateEmailNotification(db, id, existing.requester_email, emailSubject, emailBody);
     }
 
@@ -624,6 +666,88 @@ app.put('/api/requests/:id', async (req, res) => {
 
     await queueSaveDatabase(db);
     res.json(responseRequest);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST requester response (confirm or reject completion)
+app.post('/api/requests/:id/requester-response', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const { accessToken, decision, comment } = req.body;
+
+    if (!accessToken || typeof accessToken !== 'string') {
+      return res.status(400).json({ error: 'Требуется токен доступа' });
+    }
+
+    if (decision !== 'confirmed' && decision !== 'rejected') {
+      return res.status(400).json({ error: 'Недопустимое решение. Используйте confirmed или rejected.' });
+    }
+
+    if (comment && typeof comment === 'string' && comment.length > 5000) {
+      return res.status(400).json({ error: 'Комментарий не должен превышать 5000 символов.' });
+    }
+
+    const db = loadDatabase();
+    const existingIndex = db.requests.findIndex(r => r.id === id);
+    if (existingIndex === -1) {
+      return res.status(404).json({ error: 'Заявка не найдена' });
+    }
+
+    const existing = db.requests[existingIndex];
+
+    if (existing.access_token !== accessToken) {
+      return res.status(403).json({ error: 'Неверный токен доступа' });
+    }
+
+    if (existing.status !== 'awaiting_confirmation') {
+      return res.status(400).json({
+        error: `Подтверждение недоступно для статуса «${existing.status}». Ожидается статус awaiting_confirmation.`
+      });
+    }
+
+    const now = new Date().toISOString();
+    const newStatus = decision === 'confirmed' ? 'confirmed' : 'in_progress';
+    const cleanComment = comment !== undefined ? escapeHtml(String(comment).trim()) : existing.manager_comment;
+
+    const lifecycleUpdate: Partial<Request> = {
+      status: newStatus,
+      manager_comment: cleanComment,
+      updated_at: now,
+    };
+
+    if (newStatus === 'confirmed') {
+      lifecycleUpdate.confirmed_at = now;
+    }
+
+    db.requests[existingIndex] = {
+      ...existing,
+      ...lifecycleUpdate,
+    };
+
+    const nextLogId = db.request_status_log.length > 0
+      ? Math.max(...db.request_status_log.map(item => item.id)) + 1
+      : 1;
+
+    db.request_status_log.push({
+      id: nextLogId,
+      request_id: id,
+      status: newStatus,
+      note: decision === 'confirmed'
+        ? 'Заявитель подтвердил выполнение работ'
+        : 'Заявитель вернул заявку в работу',
+      created_at: now,
+    });
+
+    const emailSubject = decision === 'confirmed'
+      ? `Заявка #${id} подтверждена заявителем`
+      : `Заявка #${id} возвращена в работу заявителем`;
+    const emailBody = `Здравствуйте, ${existing.requester_name}!\n\nВаш ответ по заявке #${id} ("${existing.title}") зарегистрирован.\nНовый статус: ${newStatus}.\n\nСсылка для отслеживания:\nhttp://localhost:3000/?requestId=${id}&accessToken=${existing.access_token}`;
+    simulateEmailNotification(db, id, existing.requester_email, emailSubject, emailBody);
+
+    await queueSaveDatabase(db);
+    res.json(db.requests[existingIndex]);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }

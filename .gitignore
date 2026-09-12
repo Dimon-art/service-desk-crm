@@ -6,3 +6,13 @@ coverage/
 *.log
 .env*
 !.env.example
+data.sqlite
+*.before-*
+server.ts.before-*
+src/*.before-*
+src/components/*.before-*
+e2e_lifecycle_test.py
+fix_encoding.py
+patch_lifecycle.py
+
+data.sqlite
