@@ -130,6 +130,20 @@ export default function RequesterView({ requestId, accessToken }: RequesterViewP
             </span>
           </div>
           <p className="text-sm whitespace-pre-wrap bg-slate-50 p-4 rounded-xl">{request.description}</p>
+          {request.status === 'closed' && (
+            <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 space-y-2">
+              <div className="flex items-center gap-2 text-sm font-bold text-emerald-800">
+                <CheckCircle className="w-4 h-4" />
+                Заявка закрыта
+              </div>
+              <div className="text-sm font-semibold text-slate-700">Работа выполнена</div>
+              <div className="text-sm text-slate-600">
+                <span className="font-semibold">Что сделано:</span>{' '}
+                {request.manager_comment || 'Работа по обращению выполнена.'}
+              </div>
+            </div>
+          )}
+
           {request.manager_comment && (
             <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 text-sm">
               <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase mb-2">
@@ -189,7 +203,7 @@ export default function RequesterView({ requestId, accessToken }: RequesterViewP
           </div>
         )}
 
-        {!canConfirm && !successMessage && request.status !== 'awaiting_confirmation' && (
+        {!canConfirm && !successMessage && request.status !== 'awaiting_confirmation' && request.status !== 'closed' && (
           <p className="text-sm text-slate-500 text-center bg-slate-50 rounded-xl p-4">
             {request.status === 'confirmed'
               ? 'Вы уже подтвердили выполнение. Ожидайте закрытия заявки менеджером.'
