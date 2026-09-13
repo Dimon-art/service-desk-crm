@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRM Сервис-деск — заявки сотрудников</title>
+    <meta name="description" content="Система сквозного управления обращениями и инцидентами. Полный lifecycle заявки, роли, приоритеты.">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header class="site-header">
+        <div class="container">
+            <a class="brand" href="/">
+                <span class="brand-mark">SD</span>
+                <span class="brand-text">
+                    <span class="brand-name">Service Desk CRM</span>
+                    <span class="brand-role">Управление заявками сотрудников</span>
+                </span>
+            </a>
+            <nav class="nav">
+                <a href="#features">Возможности</a>
+                <a href="#how">Как работает</a>
+                <a href="#stack">Стек</a>
+                <a class="nav-cta" href="https://github.com/Dimon-art/service-desk-crm" target="_blank" rel="noopener">GitHub</a>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+
+        <section class="hero">
+            <div class="container">
+                <p class="eyebrow">CRM &amp; процессы · Инцидент-менеджмент</p>
+                <h1>Сквозное управление заявками и инцидентами</h1>
+                <p class="hero-lead">
+                    Прозрачный процесс от создания заявки до её закрытия:
+                    роли, приоритеты, назначение ответственного, комментарии и контроль сроков.
+                </p>
+                <div class="hero-actions">
+                    <a class="btn btn-primary" href="https://github.com/Dimon-art/service-desk-crm" target="_blank" rel="noopener">Исходный код</a>
+                    <a class="btn btn-ghost" href="#features">Возможности</a>
+                </div>
+            </div>
+        </section>
+
+        <section id="features" class="section">
+            <div class="container">
+                <h2>Возможности</h2>
+                <p class="section-lead">Полный lifecycle заявки — от идеи до закрытия.</p>
+
+                <div class="grid grid-3">
+                    <article class="card">
+                        <div class="card-num">01</div>
+                        <h3>Создание заявок</h3>
+                        <p>Сотрудник описывает проблему, выбирает категорию и приоритет. Заявка попадает в общую очередь.</p>
+                    </article>
+                    <article class="card">
+                        <div class="card-num">02</div>
+                        <h3>Полный lifecycle</h3>
+                        <p>Новая → в работе → нужна информация → закрыта. Все переходы статусов отслеживаются.</p>
+                    </article>
+                    <article class="card">
+                        <div class="card-num">03</div>
+                        <h3>Назначение ответственного</h3>
+                        <p>Менеджер берёт заявку или назначает исполнителя. Видна нагрузка на команду.</p>
+                    </article>
+                    <article class="card">
+                        <div class="card-num">04</div>
+                        <h3>Роли и доступ</h3>
+                        <p>Заявитель видит свои заявки. Менеджер — всю очередь. Архив закрытых обращений.</p>
+                    </article>
+                    <article class="card">
+                        <div class="card-num">05</div>
+                        <h3>Комментарии и история</h3>
+                        <p>Обсуждение внутри заявки. Сохранение комментариев без смены статуса.</p>
+                    </article>
+                    <article class="card">
+                        <div class="card-num">06</div>
+                        <h3>Аналитика и статусы</h3>
+                        <p>Сводка: новые, в работе, требуют информации, просроченные, закрытые.</p>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section id="how" class="section section-alt">
+            <div class="container">
+                <h2>Как это работает</h2>
+                <p class="section-lead">Один процесс — от обращения до результата.</p>
+
+                <div class="steps">
+                    <div class="step">
+                        <span class="step-num">1</span>
+                        <h3>Сотрудник создаёт заявку</h3>
+                        <p>Описывает проблему, выбирает категорию и приоритет.</p>
+                    </div>
+                    <div class="step">
+                        <span class="step-num">2</span>
+                        <h3>Менеджер берёт в работу</h3>
+                        <p>Назначает ответственного, ставит статус «в работе».</p>
+                    </div>
+                    <div class="step">
+                        <span class="step-num">3</span>
+                        <h3>Обсуждение и уточнение</h3>
+                        <p>Комментарии внутри заявки, при необходимости — статус «нужна информация».</p>
+                    </div>
+                    <div class="step">
+                        <span class="step-num">4</span>
+                        <h3>Закрытие</h3>
+                        <p>Заявка уходит в архив с полной историей и деталями выполнения.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="stack" class="section">
+            <div class="container">
+                <h2>Стек</h2>
+                <p class="section-lead">Технологии, на которых построен проект.</p>
+
+                <div class="grid grid-4">
+                    <div class="stack-card">
+                        <span class="stack-label">Frontend</span>
+                        <p>HTML, CSS, JavaScript</p>
+                    </div>
+                    <div class="stack-card">
+                        <span class="stack-label">Стиль</span>
+                        <p>SPA-интерфейс, адаптивная вёрстка</p>
+                    </div>
+                    <div class="stack-card">
+                        <span class="stack-label">Инфраструктура</span>
+                        <p>Docker, Docker Compose</p>
+                    </div>
+                    <div class="stack-card">
+                        <span class="stack-label">Процесс</span>
+                        <p>Git, GitHub Actions</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section section-cta">
+            <div class="container">
+                <h2>Посмотреть код</h2>
+                <p class="section-lead">Проект открыт для просмотра на GitHub.</p>
+                <a class="btn btn-primary" href="https://github.com/Dimon-art/service-desk-crm" target="_blank" rel="noopener">Открыть репозиторий →</a>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="site-footer">
+        <div class="container">
+            <p>© 2026 Дмитрий Коноплев. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+</body>
+</html>
