@@ -1,36 +1,6 @@
 ﻿import React, { useState, useEffect } from 'react';
 import { 
-  Home, 
-  PlusCircle, 
-  List, 
-  Server, 
-  AlertCircle, 
-  Inbox, 
-  Activity, 
-  CheckCircle, 
-  Bell, 
-  Settings, 
-  Users, 
-  BarChart3, 
-  Clock, 
-  AlertTriangle, 
-  MoreHorizontal, 
-  UserCheck, 
-  Search, 
-  ChevronRight, 
-  ArrowLeft, 
-  MessageSquare, 
-  Calendar, 
-  Mail, 
-  User, 
-  Zap, 
-  Check, 
-  BookOpen, 
-  ShieldCheck, 
-  Database,
-  ArrowUpRight,
-  Info,
-  Archive
+  Home, PlusCircle, List, Server, AlertCircle, Inbox, Activity, CheckCircle, Bell, Settings, Users, BarChart3, Clock, AlertTriangle, MoreHorizontal, UserCheck, Search, ChevronRight, ArrowLeft, MessageSquare, Calendar, Mail, User, Zap, Check, BookOpen, ShieldCheck, Database, ArrowUpRight, Info, Archive, LogOut
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { SupportRequest, CreateRequestInput, RequestStatus } from './types';
@@ -41,7 +11,14 @@ import RequestList from './components/RequestList';
 import RequestDetails from './components/RequestDetails';
 import RequesterView from './components/RequesterView';
 import ArchiveList from './components/ArchiveList';
-import { MANAGER_API_HEADERS } from './roles';
+import LoginPage from './components/LoginPage';
+
+interface CurrentUser {
+  id: number;
+  email: string;
+  name: string;
+  role: 'manager' | 'executor' | 'requester';
+}
 
 function getRequesterParams(): { requestId: number; accessToken: string } | null {
   const params = new URLSearchParams(window.location.search);
@@ -49,14 +26,11 @@ function getRequesterParams(): { requestId: number; accessToken: string } | null
   const accessToken = params.get('accessToken');
   if (requestId && accessToken) {
     const id = parseInt(requestId, 10);
-    if (!isNaN(id) && id > 0) {
-      return { requestId: id, accessToken };
-    }
+    if (!isNaN(id) && id > 0) return { requestId: id, accessToken };
   }
   return null;
 }
 
-// Mock list of team members for display (deterministic selection based on request ID)
 export const TEAM_MEMBERS = [
   { name: 'Дмитрий Петров', role: 'Ведущий инженер', email: 'd.petrov@servicedesk.ru', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80', status: 'online' },
   { name: 'Алексей Иванов', role: 'Инженер поддержки L2', email: 'a.ivanov@servicedesk.ru', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&q=80', status: 'online' },
@@ -67,6 +41,9 @@ export const TEAM_MEMBERS = [
 export default function App() {
   const requesterParams = getRequesterParams();
 
+  const [user, setUser] = useState<CurrentUser | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
+
   const [view, setView] = useState<'home' | 'requests_all' | 'requests_mine' | 'requests_archive' | 'team' | 'analytics' | 'settings' | 'create_request' | 'details_request'>('home');
   const [requests, setRequests] = useState<SupportRequest[]>([]);
   const [archivedRequests, setArchivedRequests] = useState<SupportRequest[]>([]);
@@ -76,118 +53,97 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [globalSearch, setGlobalSearch] = useState('');
-  const [notifications, setNotifications] = useState<{ id: number; text: string; time: string; read: boolean }[]>([
-    { id: 1, text: 'Создана новая заявка #1 "масло моторное"', time: '10 мин. назад', read: false },
-    { id: 2, text: 'Статус заявки #1 изменен на "В работе"', time: '5 мин. назад', read: false },
-  ]);
+  const [notifications, setNotifications] = useState<{ id: number; text: string; time: string; read: boolean }[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Fetch all requests from backend on startup
+  // Check auth on mount
+  useEffect(() => {
+    if (requesterParams) {
+      setAuthChecked(true);
+      return;
+    }
+    fetch('/api/me', { credentials: 'include' })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data) setUser(data);
+      })
+      .catch(() => {})
+      .finally(() => setAuthChecked(true));
+  }, []);
+
   const fetchRequests = async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch('/api/requests', {
-        headers: MANAGER_API_HEADERS,
-      });
+      const response = await fetch('/api/requests', { credentials: 'include' });
       if (!response.ok) {
-        throw new Error('Ошибка при загрузке заявок с сервера');
+        if (response.status === 401) { setUser(null); return; }
+        throw new Error('Ошибка при загрузке заявок');
       }
       const data = await response.json();
       setRequests(data);
     } catch (err: any) {
-      console.error(err);
-      setError(err.message || 'Ошибка соединения с сервером');
+      setError(err.message || 'Ошибка соединения');
     } finally {
       setIsLoading(false);
     }
   };
 
   const fetchArchivedRequests = async () => {
+    if (!user || user.role !== 'manager') { setArchivedRequests([]); return; }
     setIsArchiveLoading(true);
     try {
-      const response = await fetch('/api/archived-requests', {
-        headers: MANAGER_API_HEADERS,
-      });
-      if (!response.ok) {
-        throw new Error('Ошибка при загрузке архива заявок');
+      const response = await fetch('/api/archived-requests', { credentials: 'include' });
+      if (response.ok) {
+        setArchivedRequests(await response.json());
       }
-      const data = await response.json();
-      setArchivedRequests(data);
-    } catch (err: any) {
-      console.error(err);
-      setError(err.message || 'Ошибка загрузки архива');
-    } finally {
-      setIsArchiveLoading(false);
-    }
+    } catch (err) { console.error(err); }
+    finally { setIsArchiveLoading(false); }
   };
 
   useEffect(() => {
-    fetchRequests();
-    fetchArchivedRequests();
-  }, []);
+    if (user) { fetchRequests(); fetchArchivedRequests(); }
+  }, [user]);
 
-  // Handle request creation
+  const handleLogout = async () => {
+    try { await fetch('/api/logout', { method: 'POST', credentials: 'include' }); } catch {}
+    setUser(null);
+    setRequests([]);
+    setArchivedRequests([]);
+  };
+
   const handleAddRequest = async (input: CreateRequestInput): Promise<SupportRequest> => {
     const response = await fetch('/api/requests', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify(input),
     });
-
     if (!response.ok) {
       let errMsg = 'Ошибка при создании заявки';
-      try {
-        const errData = await response.json();
-        errMsg = errData.error || errMsg;
-      } catch {
-        errMsg = `Ошибка сервера (${response.status})`;
-      }
+      try { errMsg = (await response.json()).error || errMsg; } catch { errMsg = `Ошибка сервера (${response.status})`; }
       throw new Error(errMsg);
     }
-
     const created: SupportRequest = await response.json();
     setRequests((prev) => [created, ...prev]);
-    // Add real notification
-    setNotifications(prev => [
-      { id: Date.now(), text: `Создана новая заявка #${created.id} "${created.title}"`, time: 'Только что', read: false },
-      ...prev
-    ]);
     return created;
   };
 
-  // Handle request status & comment updates
   const handleUpdateStatusAndComment = async (
-    id: number,
-    status: RequestStatus,
-    comment: string,
-    assignee?: string
+    id: number, status: RequestStatus, comment: string, assignee?: string
   ): Promise<SupportRequest> => {
     const response = await fetch(`/api/requests/${id}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        ...MANAGER_API_HEADERS,
-      },
-      body: JSON.stringify({
-        status,
-        manager_comment: comment,
-        ...(assignee !== undefined ? { assignee } : {}),
-      }),
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ status, manager_comment: comment, ...(assignee !== undefined ? { assignee } : {}) }),
     });
-
     if (!response.ok) {
       let errMsg = 'Ошибка при обновлении заявки';
-      try {
-        const errData = await response.json();
-        errMsg = errData.error || errMsg;
-      } catch {
-        errMsg = `Ошибка сервера (${response.status})`;
-      }
+      try { errMsg = (await response.json()).error || errMsg; } catch { errMsg = `Ошибка сервера (${response.status})`; }
       throw new Error(errMsg);
     }
-
     const updated: SupportRequest = await response.json();
     if (status === 'closed') {
       setRequests((prev) => prev.filter((r) => r.id !== id));
@@ -198,11 +154,6 @@ export default function App() {
     } else {
       setRequests((prev) => prev.map((r) => (r.id === id ? updated : r)));
     }
-    // Add real notification
-    setNotifications(prev => [
-      { id: Date.now(), text: `Статус заявки #${id} изменен на "${getStatusLabel(status)}"`, time: 'Только что', read: false },
-      ...prev
-    ]);
     return updated;
   };
 
@@ -211,265 +162,134 @@ export default function App() {
     archivedRequests.find((r) => r.id === selectedRequestId);
   const isArchivedDetails = detailsSource === 'archive' || selectedRequest?.status === 'closed';
 
-  const handleNotificationClick = (id: number) => {
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
-  };
-
-  const handleMarkAllNotificationsAsRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-  };
-
+  const handleNotificationClick = (id: number) => setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+  const handleMarkAllNotificationsAsRead = () => setNotifications(prev => prev.map(n => ({ ...n, read: true })));
   const unreadNotificationsCount = notifications.filter(n => !n.read).length;
 
   if (requesterParams) {
+    return <RequesterView requestId={requesterParams.requestId} accessToken={requesterParams.accessToken} />;
+  }
+
+  if (!authChecked) {
     return (
-      <RequesterView
-        requestId={requesterParams.requestId}
-        accessToken={requesterParams.accessToken}
-      />
+      <div className="min-h-screen flex items-center justify-center bg-[#F6F8FB]">
+        <div className="w-9 h-9 border-3 border-[#049460] border-t-transparent rounded-full animate-spin" />
+      </div>
     );
   }
+
+  if (!user) {
+    return <LoginPage onSuccess={() => {
+      fetch('/api/me', { credentials: 'include' })
+        .then(r => r.ok ? r.json() : null)
+        .then(data => data && setUser(data));
+    }} />;
+  }
+
+  const roleLabel = user.role === 'manager' ? 'Руководитель' : user.role === 'executor' ? 'Исполнитель' : 'Заявитель';
 
   return (
     <div className="min-h-screen bg-[#F6F8FB] flex text-[#14213D] antialiased font-sans select-none overflow-x-hidden">
       
-      {/* 1. Слева: тёмный боковой сайдбар шириной 240 px */}
       <aside className="w-[260px] bg-[#063D31] text-slate-300 flex-col justify-between shrink-0 hidden md:flex border-r border-slate-800 relative z-20">
         <div className="flex flex-col">
-          {/* Логотип */}
           <div className="p-5 border-b border-slate-800 flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-[#049460] flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
+            <div className="w-9 h-9 rounded-xl bg-[#049460] flex items-center justify-center text-white shadow-lg">
               <Inbox className="w-5 h-5" />
             </div>
             <div>
-              <span className="font-bold text-white text-sm leading-tight block">
-                Сервис заявок
-              </span>
-              <span className="text-[10px] text-slate-400 block font-semibold tracking-wider uppercase">
-                Service Desk CRM
-              </span>
+              <span className="font-bold text-white text-sm leading-tight block">Сервис заявок</span>
+              <span className="text-[10px] text-slate-400 block font-semibold tracking-wider uppercase">Service Desk CRM</span>
             </div>
           </div>
 
-          {/* Навигационное меню */}
           <div className="px-3 py-4 space-y-6">
             <div>
-              <span className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-2">
-                Управление обращениями
-              </span>
+              <span className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-2">Управление</span>
               <nav className="space-y-1">
-                <button
-                  onClick={() => { setView('home'); setSelectedRequestId(null); }}
-                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
-                    view === 'home'
-                      ? 'bg-[#0F6C53] text-white shadow-md shadow-emerald-900/10 font-bold'
-                      : 'text-slate-400 hover:text-white hover:bg-white/10'
-                  }`}
-                >
-                  <Home className="w-4 h-4" />
-                  <span>Главная</span>
-                </button>
-                <button
-                  onClick={() => { setView('requests_all'); setSelectedRequestId(null); }}
-                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
-                    view === 'requests_all'
-                      ? 'bg-[#0F6C53] text-white shadow-md shadow-emerald-900/10 font-bold'
-                      : 'text-slate-400 hover:text-white hover:bg-white/10'
-                  }`}
-                >
-                  <List className="w-4 h-4" />
-                  <span>Все заявки</span>
-                </button>
-                <button
-                  onClick={() => { setView('requests_mine'); setSelectedRequestId(null); }}
-                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
-                    view === 'requests_mine'
-                      ? 'bg-[#0F6C53] text-white shadow-md shadow-emerald-900/10 font-bold'
-                      : 'text-slate-400 hover:text-white hover:bg-white/10'
-                  }`}
-                >
-                  <UserCheck className="w-4 h-4" />
-                  <span>Мои заявки</span>
-                </button>
-                <button
-                  onClick={() => { setView('requests_archive'); setSelectedRequestId(null); fetchArchivedRequests(); }}
-                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
-                    view === 'requests_archive'
-                      ? 'bg-[#0F6C53] text-white shadow-md shadow-emerald-900/10 font-bold'
-                      : 'text-slate-400 hover:text-white hover:bg-white/10'
-                  }`}
-                >
-                  <Archive className="w-4 h-4" />
-                  <span>Архив</span>
-                </button>
-                <button
-                  onClick={() => { setView('team'); setSelectedRequestId(null); }}
-                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
-                    view === 'team'
-                      ? 'bg-[#0F6C53] text-white shadow-md shadow-emerald-900/10 font-bold'
-                      : 'text-slate-400 hover:text-white hover:bg-white/10'
-                  }`}
-                >
-                  <Users className="w-4 h-4" />
-                  <span>Команда</span>
-                </button>
-                <button
-                  onClick={() => { setView('analytics'); setSelectedRequestId(null); }}
-                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
-                    view === 'analytics'
-                      ? 'bg-[#0F6C53] text-white shadow-md shadow-emerald-900/10 font-bold'
-                      : 'text-slate-400 hover:text-white hover:bg-white/10'
-                  }`}
-                >
-                  <BarChart3 className="w-4 h-4" />
-                  <span>Аналитика</span>
-                </button>
-                <button
-                  onClick={() => { setView('settings'); setSelectedRequestId(null); }}
-                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
-                    view === 'settings'
-                      ? 'bg-[#0F6C53] text-white shadow-md shadow-emerald-900/10 font-bold'
-                      : 'text-slate-400 hover:text-white hover:bg-white/10'
-                  }`}
-                >
-                  <Settings className="w-4 h-4" />
-                  <span>Настройки</span>
-                </button>
+                {[
+                  { id: 'home', icon: Home, label: 'Главная' },
+                  { id: 'requests_all', icon: List, label: 'Все заявки' },
+                  { id: 'requests_mine', icon: UserCheck, label: 'Мои заявки' },
+                  ...(user.role === 'manager' ? [{ id: 'requests_archive', icon: Archive, label: 'Архив' }] : []),
+                  { id: 'team', icon: Users, label: 'Команда' },
+                  { id: 'analytics', icon: BarChart3, label: 'Аналитика' },
+                  { id: 'settings', icon: Settings, label: 'Настройки' },
+                ].map(({ id, icon: Icon, label }) => (
+                  <button
+                    key={id}
+                    onClick={() => { setView(id as any); setSelectedRequestId(null); if (id === 'requests_archive') fetchArchivedRequests(); }}
+                    className={`w-full flex items-center gap-3 px-3.5 py-2.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                      view === id ? 'bg-[#0F6C53] text-white shadow-md' : 'text-slate-400 hover:text-white hover:bg-white/10'
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                    <span>{label}</span>
+                  </button>
+                ))}
               </nav>
             </div>
           </div>
         </div>
 
-        {/* Профиль пользователя в нижней части сайдбара */}
         <div className="p-4 border-t border-slate-800 bg-slate-950/20">
           <div className="flex items-center gap-3">
-            <div className="relative">
-              <img 
-                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" 
-                className="w-9 h-9 rounded-full object-cover border border-[#049460]"
-                alt="Аватар менеджера" 
-                referrerPolicy="no-referrer"
-              />
-              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-[#172033]" />
+            <div className="w-9 h-9 rounded-full bg-[#049460] flex items-center justify-center text-white font-bold text-xs">
+              {user.name.charAt(0).toUpperCase()}
             </div>
             <div className="min-w-0 flex-1">
-              <span className="font-bold text-xs text-white block truncate">
-                Дмитрий Петров
-              </span>
-              <span className="text-[10px] text-slate-400 block truncate">
-                Ведущий инженер
-              </span>
+              <span className="font-bold text-xs text-white block truncate">{user.name}</span>
+              <span className="text-[10px] text-slate-400 block truncate">{roleLabel}</span>
             </div>
+            <button onClick={handleLogout} title="Выйти" className="p-1.5 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition">
+              <LogOut className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </aside>
 
-      {/* 2. Справа: Основная контентная область с атмосферной панорамой Абу-Даби */}
       <div className="city-bg-container flex-1 min-h-screen flex flex-col relative overflow-x-hidden">
-        {/* Темно-синий overlay с прозрачностью 70-82% */}
         <div className="absolute inset-0 bg-[#0F172A]/78 backdrop-blur-[1.5px] pointer-events-none" />
 
-        {/* Шапка (Top Bar) с полупрозрачным размытием */}
         <header className="sticky top-0 z-30 bg-white/95 border-b border-slate-100 backdrop-blur-md px-4 sm:px-6 py-3 flex items-center justify-between shadow-sm relative">
-          
-          {/* Заголовок страницы и гамбургер на мобильных */}
           <div className="flex items-center gap-3">
-            <button 
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} 
-              className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-600 md:hidden"
-            >
+            <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-600 md:hidden">
               <Inbox className="w-5 h-5 text-[#049460]" />
             </button>
-            <div>
-              <h2 className="text-sm font-bold text-[#14213D] leading-tight flex items-center gap-1.5 uppercase tracking-wider">
-                <span className="w-1.5 h-3 bg-[#049460] rounded-full inline-block" />
-                {view === 'home' && 'Главная'}
-                {view === 'requests_all' && 'Все входящие обращения'}
-                {view === 'requests_mine' && 'Мои персональные заявки'}
-                {view === 'requests_archive' && 'Архив закрытых заявок'}
-                {view === 'team' && 'Команда Service Desk'}
-                {view === 'analytics' && 'Статистический мониторинг'}
-                {view === 'settings' && 'Конфигурация SLA'}
-                {view === 'create_request' && 'Регистрация инцидента'}
-                {view === 'details_request' && 'Панель обработки инцидента'}
-              </h2>
-            </div>
+            <h2 className="text-sm font-bold text-[#14213D] leading-tight flex items-center gap-1.5 uppercase tracking-wider">
+              <span className="w-1.5 h-3 bg-[#049460] rounded-full inline-block" />
+              {view === 'home' && 'Главная'}
+              {view === 'requests_all' && 'Все входящие обращения'}
+              {view === 'requests_mine' && 'Мои заявки'}
+              {view === 'requests_archive' && 'Архив закрытых заявок'}
+              {view === 'team' && 'Команда Service Desk'}
+              {view === 'analytics' && 'Статистический мониторинг'}
+              {view === 'settings' && 'Конфигурация'}
+              {view === 'create_request' && 'Регистрация инцидента'}
+              {view === 'details_request' && 'Панель обработки'}
+            </h2>
           </div>
 
-          {/* Строка глобального поиска, уведомления, профиль и кнопка «+ Создать заявку» */}
           <div className="flex items-center gap-3.5">
-            {/* Строка поиска */}
             <div className="relative hidden lg:block w-64">
               <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
               <input
-                type="text"
-                placeholder="Глобальный поиск..."
-                value={globalSearch}
+                type="text" placeholder="Глобальный поиск..." value={globalSearch}
                 onChange={(e) => setGlobalSearch(e.target.value)}
                 className="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200/80 focus:border-[#049460] outline-none rounded-lg text-xs text-slate-900 placeholder:text-slate-400 transition focus:bg-white"
               />
             </div>
 
-            {/* Уведомления */}
-            <div className="relative">
-              <button 
-                onClick={() => setShowNotifications(!showNotifications)}
-                className="p-2 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200/50 text-slate-600 relative transition-all"
-              >
-                <Bell className="w-4.5 h-4.5" />
-                {unreadNotificationsCount > 0 && (
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#D84A5A] rounded-full ring-2 ring-white animate-pulse" />
-                )}
-              </button>
+            <button onClick={() => setShowNotifications(!showNotifications)}
+              className="p-2 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200/50 text-slate-600 relative transition-all">
+              <Bell className="w-4 h-4" />
+              {unreadNotificationsCount > 0 && <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#D84A5A] rounded-full ring-2 ring-white" />}
+            </button>
 
-              <AnimatePresence>
-                {showNotifications && (
-                  <motion.div 
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 10 }}
-                    className="absolute right-0 mt-2.5 w-72 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden z-50 p-1.5 text-xs"
-                  >
-                    <div className="p-2 border-b border-slate-100 flex items-center justify-between">
-                      <span className="font-bold text-[#14213D]">Уведомления ({unreadNotificationsCount})</span>
-                      <button 
-                        onClick={handleMarkAllNotificationsAsRead}
-                        className="text-[10px] text-[#049460] hover:underline font-semibold"
-                      >
-                        Прочитать все
-                      </button>
-                    </div>
-                    <div className="max-h-56 overflow-y-auto py-1 space-y-1">
-                      {notifications.map(notif => (
-                        <div 
-                          key={notif.id}
-                          onClick={() => handleNotificationClick(notif.id)}
-                          className={`p-2 rounded-lg cursor-pointer transition ${notif.read ? 'bg-white hover:bg-slate-50' : 'bg-blue-50/50 hover:bg-blue-50'}`}
-                        >
-                          <div className="flex justify-between items-start gap-2">
-                            <span className={`font-medium ${notif.read ? 'text-slate-600' : 'text-slate-800 font-semibold'}`}>{notif.text}</span>
-                            <span className="text-[9px] text-slate-400 shrink-0 font-mono">{notif.time}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-
-            {/* Профиль для мобильных */}
             <div className="flex items-center gap-2 border-l border-slate-200/80 pl-3">
-              <img 
-                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" 
-                className="w-8 h-8 rounded-lg object-cover border border-[#049460]/30 hidden sm:block"
-                alt="Профиль" 
-                referrerPolicy="no-referrer"
-              />
               <button
                 onClick={() => { setView('create_request'); setSelectedRequestId(null); }}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#049460] hover:bg-[#078454] text-white font-bold rounded-lg text-xs transition shadow-md shadow-blue-500/20"
-              >
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#049460] hover:bg-[#078454] text-white font-bold rounded-lg text-xs transition shadow-md">
                 <PlusCircle className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">+ Создать заявку</span>
               </button>
@@ -477,365 +297,136 @@ export default function App() {
           </div>
         </header>
 
-        {/* Мобильное меню навигации */}
-        <AnimatePresence>
-          {isMobileMenuOpen && (
-            <motion.div 
-              initial={{ opacity: 0, x: -100 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -100 }}
-              className="fixed inset-y-0 left-0 w-[260px] bg-[#063D31] text-slate-300 z-50 flex flex-col justify-between shadow-2xl md:hidden"
-            >
-              <div>
-                <div className="p-4 border-b border-slate-800 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8.5 h-8.5 rounded-lg bg-[#049460] flex items-center justify-center text-white font-bold">
-                      СЗ
-                    </div>
-                    <span className="font-bold text-white text-sm">Сервис заявок</span>
-                  </div>
-                  <button onClick={() => setIsMobileMenuOpen(false)} className="text-slate-400 hover:text-white">✕</button>
-                </div>
-                <div className="p-3 space-y-1">
-                  <button
-                    onClick={() => { setView('home'); setSelectedRequestId(null); setIsMobileMenuOpen(false); }}
-                    className={`w-full flex items-center gap-3 px-3.5 py-2.5 text-xs font-semibold rounded-lg transition-all ${
-                      view === 'home' ? 'bg-[#049460] text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                    }`}
-                  >
-                    <Home className="w-4 h-4" />
-                    <span>Главная</span>
-                  </button>
-                  <button
-                    onClick={() => { setView('requests_all'); setSelectedRequestId(null); setIsMobileMenuOpen(false); }}
-                    className={`w-full flex items-center gap-3 px-3.5 py-2.5 text-xs font-semibold rounded-lg transition-all ${
-                      view === 'requests_all' ? 'bg-[#049460] text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                    }`}
-                  >
-                    <List className="w-4 h-4" />
-                    <span>Все заявки</span>
-                  </button>
-                  <button
-                    onClick={() => { setView('requests_mine'); setSelectedRequestId(null); setIsMobileMenuOpen(false); }}
-                    className={`w-full flex items-center gap-3 px-3.5 py-2.5 text-xs font-semibold rounded-lg transition-all ${
-                      view === 'requests_mine' ? 'bg-[#049460] text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                    }`}
-                  >
-                    <UserCheck className="w-4 h-4" />
-                    <span>Мои заявки</span>
-                  </button>
-                  <button
-                    onClick={() => { setView('requests_archive'); setSelectedRequestId(null); setIsMobileMenuOpen(false); fetchArchivedRequests(); }}
-                    className={`w-full flex items-center gap-3 px-3.5 py-2.5 text-xs font-semibold rounded-lg transition-all ${
-                      view === 'requests_archive' ? 'bg-[#049460] text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                    }`}
-                  >
-                    <Archive className="w-4 h-4" />
-                    <span>Архив</span>
-                  </button>
-                  <button
-                    onClick={() => { setView('team'); setSelectedRequestId(null); setIsMobileMenuOpen(false); }}
-                    className={`w-full flex items-center gap-3 px-3.5 py-2.5 text-xs font-semibold rounded-lg transition-all ${
-                      view === 'team' ? 'bg-[#049460] text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                    }`}
-                  >
-                    <Users className="w-4 h-4" />
-                    <span>Команда</span>
-                  </button>
-                  <button
-                    onClick={() => { setView('analytics'); setSelectedRequestId(null); setIsMobileMenuOpen(false); }}
-                    className={`w-full flex items-center gap-3 px-3.5 py-2.5 text-xs font-semibold rounded-lg transition-all ${
-                      view === 'analytics' ? 'bg-[#049460] text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                    }`}
-                  >
-                    <BarChart3 className="w-4 h-4" />
-                    <span>Аналитика</span>
-                  </button>
-                  <button
-                    onClick={() => { setView('settings'); setSelectedRequestId(null); setIsMobileMenuOpen(false); }}
-                    className={`w-full flex items-center gap-3 px-3.5 py-2.5 text-xs font-semibold rounded-lg transition-all ${
-                      view === 'settings' ? 'bg-[#049460] text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                    }`}
-                  >
-                    <Settings className="w-4 h-4" />
-                    <span>Настройки</span>
-                  </button>
-                </div>
-              </div>
-              <div className="p-4 border-t border-slate-800">
-                <div className="flex items-center gap-3">
-                  <img 
-                    src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" 
-                    className="w-8 h-8 rounded-full object-cover" 
-                    alt="Дмитрий" 
-                    referrerPolicy="no-referrer"
-                  />
-                  <div>
-                    <span className="font-bold text-xs text-white block">Дмитрий Петров</span>
-                    <span className="text-[10px] text-slate-400 block">Администратор</span>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* 3. Рабочее пространство (Main Workspace) */}
         <main className="flex-grow p-4 sm:p-6 relative z-10">
-          
-          {/* Сообщение об ошибке соединения */}
           {error && (
-            <div className="bg-[#D84A5A]/10 border border-[#D84A5A]/30 text-[#D84A5A] rounded-xl p-4 mb-6 flex gap-3 items-start backdrop-blur-md">
-              <AlertCircle className="w-4.5 h-4.5 flex-shrink-0 mt-0.5" />
+            <div className="bg-[#D84A5A]/10 border border-[#D84A5A]/30 text-[#D84A5A] rounded-xl p-4 mb-6 flex gap-3 items-start">
+              <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
               <div className="text-xs">
-                <span className="font-bold">Проблема синхронизации с базой:</span> {error}. Проверьте соединение с SQLite БД.
-                <button
-                  onClick={fetchRequests}
-                  className="ml-3 underline font-bold text-red-700 hover:text-red-900"
-                >
-                  Повторить соединение
-                </button>
+                <span className="font-bold">Проблема:</span> {error}.
+                <button onClick={fetchRequests} className="ml-3 underline font-bold">Повторить</button>
               </div>
             </div>
           )}
 
-          {/* Индикатор загрузки БД */}
           {isLoading && requests.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-32 space-y-4">
               <div className="w-9 h-9 border-3 border-[#049460] border-t-transparent rounded-full animate-spin" />
-              <p className="text-white text-xs font-semibold tracking-wide drop-shadow-md">
-                Инициализация Service Desk SQLite БД...
-              </p>
+              <p className="text-white text-xs font-semibold drop-shadow-md">Загрузка...</p>
             </div>
           ) : (
             <div>
               {view === 'home' && (
                 <HomeView
-                  requests={requests}
-                  archivedCount={archivedRequests.length}
-                  globalSearch={globalSearch}
-                  onSelectRequest={(id) => {
-                    setSelectedRequestId(id);
-                    setDetailsSource('active');
-                    setView('details_request');
-                  }}
+                  requests={requests} archivedCount={archivedRequests.length} globalSearch={globalSearch}
+                  onSelectRequest={(id) => { setSelectedRequestId(id); setDetailsSource('active'); setView('details_request'); }}
                   onNavigate={(v) => {
                     if (v === 'create') setView('create_request');
                     else if (v === 'list') setView('requests_all');
-                    else if (v === 'archive') {
-                      setView('requests_archive');
-                      fetchArchivedRequests();
-                    } else setView(v as any);
+                    else if (v === 'archive') { setView('requests_archive'); fetchArchivedRequests(); }
+                    else setView(v as any);
                   }}
                 />
               )}
-
               {view === 'requests_all' && (
-                <RequestList
-                  requests={requests}
-                  onSelectRequest={(id) => {
-                    setSelectedRequestId(id);
-                    setDetailsSource('active');
-                    setView('details_request');
-                  }}
-                  onNavigateHome={() => setView('home')}
-                />
+                <RequestList requests={requests}
+                  onSelectRequest={(id) => { setSelectedRequestId(id); setDetailsSource('active'); setView('details_request'); }}
+                  onNavigateHome={() => setView('home')} />
               )}
-
               {view === 'requests_mine' && (
-                <RequestList
-                  requests={requests}
-                  mineFilterOnly={true} // special filter
-                  onSelectRequest={(id) => {
-                    setSelectedRequestId(id);
-                    setDetailsSource('active');
-                    setView('details_request');
-                  }}
-                  onNavigateHome={() => setView('home')}
-                />
+                <RequestList requests={requests.filter(r => user.role === 'executor' ? r.assignee === user.name : r.requester_email === user.email)} mineFilterOnly={true}
+                  onSelectRequest={(id) => { setSelectedRequestId(id); setDetailsSource('active'); setView('details_request'); }}
+                  onNavigateHome={() => setView('home')} />
               )}
-
               {view === 'requests_archive' && (
-                <ArchiveList
-                  requests={archivedRequests}
-                  isLoading={isArchiveLoading}
-                  onSelectRequest={(id) => {
-                    setSelectedRequestId(id);
-                    setDetailsSource('archive');
-                    setView('details_request');
-                  }}
-                  onNavigateHome={() => setView('home')}
-                />
+                <ArchiveList requests={archivedRequests} isLoading={isArchiveLoading}
+                  onSelectRequest={(id) => { setSelectedRequestId(id); setDetailsSource('archive'); setView('details_request'); }}
+                  onNavigateHome={() => setView('home')} />
               )}
-
               {view === 'team' && (
-                <div className="space-y-6">
-                  <div className="bg-white rounded-2xl p-6 shadow-md border border-slate-100">
-                    <h3 className="text-base font-bold text-[#14213D] mb-2 uppercase tracking-wider flex items-center gap-2">
-                      <Users className="w-5 h-5 text-[#049460]" />
-                      Инженерный состав команды
-                    </h3>
-                    <p className="text-xs text-[#64748B] mb-6 font-light">
-                      Текущий статус инженеров Service Desk, количество обрабатываемых тикетов и персональный SLA.
-                    </p>
-                    <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                      {TEAM_MEMBERS.map((member, idx) => {
-                        const memberRequests = requests.filter(r => r.status !== 'closed' && r.id % 4 === idx).length;
-                        const score = 4.7 + (idx * 0.1);
-                        return (
-                          <div key={idx} className="bg-[#F6F8FB]/50 border border-slate-100 rounded-xl p-4 flex flex-col justify-between hover:border-[#049460]/30 transition group">
-                            <div className="flex items-center gap-3">
-                              <div className="relative">
-                                <img src={member.avatar} className="w-11 h-11 rounded-full object-cover border-2 border-white shadow-sm" alt={member.name} referrerPolicy="no-referrer" />
-                                <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${
-                                  member.status === 'online' ? 'bg-emerald-500' : member.status === 'away' ? 'bg-amber-400' : 'bg-slate-300'
-                                }`} />
-                              </div>
-                              <div>
-                                <h4 className="font-bold text-xs text-[#14213D] group-hover:text-[#049460] transition">{member.name}</h4>
-                                <p className="text-[10px] text-slate-400 font-medium">{member.role}</p>
-                              </div>
-                            </div>
-                            <div className="mt-5 pt-3 border-t border-slate-200/50 space-y-1.5 text-[10px] text-slate-500 font-semibold uppercase">
-                              <div className="flex justify-between">
-                                <span>Активных задач:</span>
-                                <span className="font-bold text-[#14213D]">{memberRequests} шт.</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>Степень SLA:</span>
-                                <span className="font-bold text-emerald-600">{score.toFixed(1)} / 5.0</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>Почта:</span>
-                                <span className="font-mono lowercase text-[9px] text-slate-400 font-normal">{member.email}</span>
-                              </div>
-                            </div>
+                <div className="bg-white rounded-2xl p-6 shadow-md border border-slate-100">
+                  <h3 className="text-base font-bold text-[#14213D] mb-2 uppercase tracking-wider flex items-center gap-2">
+                    <Users className="w-5 h-5 text-[#049460]" />Инженерный состав
+                  </h3>
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
+                    {TEAM_MEMBERS.map((m, idx) => (
+                      <div key={idx} className="bg-[#F6F8FB]/50 border border-slate-100 rounded-xl p-4">
+                        <div className="flex items-center gap-3">
+                          <img src={m.avatar} className="w-11 h-11 rounded-full object-cover" alt={m.name} />
+                          <div>
+                            <h4 className="font-bold text-xs text-[#14213D]">{m.name}</h4>
+                            <p className="text-[10px] text-slate-400">{m.role}</p>
                           </div>
-                        );
-                      })}
-                    </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
-
               {view === 'analytics' && (
-                <div className="space-y-6">
-                  <div className="bg-white rounded-2xl p-6 shadow-md border border-slate-100">
-                    <h3 className="text-base font-bold text-[#14213D] mb-1 uppercase tracking-wider flex items-center gap-2">
-                      <BarChart3 className="w-5 h-5 text-[#049460]" />
-                      Аналитика производительности SLA
-                    </h3>
-                    <p className="text-xs text-[#64748B] mb-6">
-                      Количественный анализ зарегистрированных обращений, распределение нагрузки по статусам и критичности.
-                    </p>
-                    <div className="p-4 bg-[#F6F8FB]/50 rounded-xl border border-slate-100 flex flex-col justify-center items-center h-64 text-center">
-                      <Clock className="w-10 h-10 text-[#049460] mb-2 animate-pulse" />
-                      <span className="font-bold text-xs text-[#14213D]">Интерактивная статистика</span>
-                      <p className="text-[11px] text-slate-400 max-w-sm mt-1">
-                        Всего обработано обращений: {requests.length}. Нагрузка на инженеров распределена равномерно. Среднее время закрытия инцидента — 2.4 часа.
-                      </p>
-                    </div>
+                <div className="bg-white rounded-2xl p-6 shadow-md border border-slate-100">
+                  <h3 className="text-base font-bold text-[#14213D] mb-2 uppercase tracking-wider flex items-center gap-2">
+                    <BarChart3 className="w-5 h-5 text-[#049460]" />Аналитика SLA
+                  </h3>
+                  <div className="p-4 bg-[#F6F8FB]/50 rounded-xl flex flex-col justify-center items-center h-64">
+                    <Clock className="w-10 h-10 text-[#049460] mb-2" />
+                    <span className="font-bold text-xs text-[#14213D]">Всего обработано: {requests.length}</span>
                   </div>
                 </div>
               )}
-
               {view === 'settings' && (
-                <div className="space-y-6">
-                  <div className="bg-white rounded-2xl p-6 shadow-md border border-slate-100">
-                    <h3 className="text-base font-bold text-[#14213D] mb-1 uppercase tracking-wider flex items-center gap-2">
-                      <Settings className="w-5 h-5 text-[#049460]" />
-                      Настройки SLA и Конфигурация системы
-                    </h3>
-                    <p className="text-xs text-[#64748B] mb-6">
-                      Настройка рабочих регламентов, лимитов памяти, правил автоназначения исполнителей и шаблонов почтовых сообщений.
-                    </p>
-                    <div className="grid sm:grid-cols-2 gap-6 text-xs">
-                      <div className="space-y-4">
-                        <h4 className="font-bold text-xs text-[#14213D] uppercase tracking-wide border-b border-slate-100 pb-1.5">Регламент критичности (SLA)</h4>
-                        <div className="space-y-2.5">
-                          <div className="flex justify-between items-center bg-[#F6F8FB] p-2.5 rounded-lg border border-slate-100">
-                            <div>
-                              <span className="font-bold text-[#14213D] block">Высокий приоритет</span>
-                              <span className="text-[10px] text-slate-400">Реакция диспетчера до 15 минут</span>
-                            </div>
-                            <span className="px-2 py-0.5 rounded bg-red-100 text-[#D84A5A] font-bold text-[10px]">Решено</span>
-                          </div>
-                          <div className="flex justify-between items-center bg-[#F6F8FB] p-2.5 rounded-lg border border-slate-100">
-                            <div>
-                              <span className="font-bold text-[#14213D] block">Средний приоритет</span>
-                              <span className="text-[10px] text-slate-400">Реакция диспетчера до 1 часа</span>
-                            </div>
-                            <span className="px-2 py-0.5 rounded bg-amber-100 text-[#E48A19] font-bold text-[10px]">Решено</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="space-y-4">
-                        <h4 className="font-bold text-xs text-[#14213D] uppercase tracking-wide border-b border-slate-100 pb-1.5">Инфраструктура хранения</h4>
-                        <div className="space-y-2 text-[11px] text-slate-500 font-medium uppercase">
-                          <div className="flex justify-between items-center p-2 border-b border-slate-100">
-                            <span>Тип СУБД:</span>
-                            <span className="font-bold text-[#14213D]">SQLite (data.sqlite)</span>
-                          </div>
-                          <div className="flex justify-between items-center p-2 border-b border-slate-100">
-                            <span>Режим очереди транзакций:</span>
-                            <span className="font-bold text-emerald-600">Mutex Active</span>
-                          </div>
-                          <div className="flex justify-between items-center p-2">
-                            <span>Размер пула памяти:</span>
-                            <span className="font-bold text-[#14213D]">128 MB</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                <div className="bg-white rounded-2xl p-6 shadow-md border border-slate-100">
+                  <h3 className="text-base font-bold text-[#14213D] mb-2 uppercase tracking-wider flex items-center gap-2">
+                    <Settings className="w-5 h-5 text-[#049460]" />Настройки
+                  </h3>
+                  <div className="mt-4 text-xs space-y-2">
+                    <div className="flex justify-between p-2 border-b border-slate-100"><span>СУБД:</span><span className="font-bold">SQLite</span></div>
+                    <div className="flex justify-between p-2 border-b border-slate-100"><span>Текущий пользователь:</span><span className="font-bold">{user.email}</span></div>
+                    <div className="flex justify-between p-2"><span>Роль:</span><span className="font-bold">{roleLabel}</span></div>
                   </div>
                 </div>
               )}
-
               {view === 'create_request' && (
-                <CreateRequestForm
-                  onAddRequest={handleAddRequest}
+                <CreateRequestForm onAddRequest={handleAddRequest}
                   onNavigateHome={() => setView('home')}
-                  onNavigateList={() => setView('requests_all')}
-                />
+                  onNavigateList={() => setView('requests_all')} />
               )}
-
               {view === 'details_request' && selectedRequest && (
-                <RequestDetails
-                  request={selectedRequest}
-                  readOnly={isArchivedDetails}
+                <RequestDetails request={selectedRequest} readOnly={isArchivedDetails || user.role === 'requester'}
                   onUpdateStatusAndComment={handleUpdateStatusAndComment}
-                  onBackToList={() => {
-                    setView(isArchivedDetails ? 'requests_archive' : 'requests_all');
-                    setSelectedRequestId(null);
-                    setDetailsSource('active');
-                  }}
-                />
+                  onBackToList={() => { setView(isArchivedDetails ? 'requests_archive' : 'requests_all'); setSelectedRequestId(null); setDetailsSource('active'); }} />
               )}
             </div>
           )}
         </main>
 
-        {/* Скромный брендированный футер */}
         <footer className="py-4.5 relative z-10 text-center">
           <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-[10px] text-slate-400 font-semibold tracking-wide uppercase">
             <div className="flex items-center gap-2">
               <Server className="w-3.5 h-3.5 text-slate-500" />
-              <span>База данных: <code className="bg-slate-900 border border-slate-800 rounded px-1.5 py-0.5 text-[#049460] font-mono lowercase font-normal">data.sqlite</code></span>
+              <span>БД: <code className="bg-slate-900 border border-slate-800 rounded px-1.5 py-0.5 text-[#049460] font-mono">data.sqlite</code></span>
             </div>
-            <div>
-              <span>© {new Date().getFullYear()} Сервис заявок • Все права защищены</span>
-            </div>
+            <div>© {new Date().getFullYear()} Сервис заявок</div>
             <div className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span>Атомарная SQLite запись стабильна</span>
+              <span>Онлайн</span>
             </div>
           </div>
         </footer>
       </div>
+
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <motion.div initial={{ opacity: 0, x: -100 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -100 }}
+            className="fixed inset-y-0 left-0 w-[260px] bg-[#063D31] text-slate-300 z-50 flex flex-col justify-between shadow-2xl md:hidden">
+            <div className="p-3 space-y-1 mt-4">
+              <button onClick={() => { setView('home'); setIsMobileMenuOpen(false); }} className="w-full flex items-center gap-3 px-3.5 py-2.5 text-xs text-slate-300 hover:bg-white/10 rounded-lg"><Home className="w-4 h-4" />Главная</button>
+              <button onClick={() => { setView('requests_all'); setIsMobileMenuOpen(false); }} className="w-full flex items-center gap-3 px-3.5 py-2.5 text-xs text-slate-300 hover:bg-white/10 rounded-lg"><List className="w-4 h-4" />Все заявки</button>
+              <button onClick={() => { setView('requests_mine'); setIsMobileMenuOpen(false); }} className="w-full flex items-center gap-3 px-3.5 py-2.5 text-xs text-slate-300 hover:bg-white/10 rounded-lg"><UserCheck className="w-4 h-4" />Мои заявки</button>
+              <button onClick={() => { handleLogout(); setIsMobileMenuOpen(false); }} className="w-full flex items-center gap-3 px-3.5 py-2.5 text-xs text-red-300 hover:bg-white/10 rounded-lg"><LogOut className="w-4 h-4" />Выйти</button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
-
-
-
-
